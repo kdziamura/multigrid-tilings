@@ -84,7 +84,7 @@ Multigrid.byParams = function (params) {
 	var angle;
 
  	for (i = 0; i < gridsNum; i++) {
-		angle = angleStep ? angleStep * i : Math.random() * 2 * Math.PI;
+		angle = angleStep * i;
 		grid = new Grid(angle, shift);
 		subgrids[i] = grid.subGrid(linesNum);
 	}
@@ -92,10 +92,9 @@ Multigrid.byParams = function (params) {
 	return new Multigrid(subgrids);
 };
 
-Multigrid.prototype.processIntersections = function (callback) {
-	this.processGrids(this._intersections.bind(this, callback));
+Multigrid.prototype.processIntersections = function (callback, isTuple) {
+	this.processGrids(this._intersections.bind(this, callback, isTuple));
 };
-
 
 /**
  * Process subgrids intersections by callback with two args
@@ -104,31 +103,29 @@ Multigrid.prototype.processIntersections = function (callback) {
  */
 Multigrid.prototype.processGrids = function (callback) {
 	var subgrids = this.subgrids;
-	var length = this.subgrids.length;
-	var currentGrid;
+	var length = subgrids.length;
 	var i;
 	var j;
 
 	for (i = 0; i < length - 1; i++) {
-		currentGrid = subgrids[i];
-
 		for (j = i + 1; j < length; j++) {
-			callback(currentGrid, subgrids[j]);
+			callback(subgrids[i], subgrids[j]);
 		}
 	}
 
 };
 
 
-Multigrid.prototype._intersections = function (callback, subA, subB) {
+Multigrid.prototype._intersections = function (callback, isTuple, subA, subB) {
+	var subgrids = this.subgrids;
 	var i;
 	var j;
-	var intersection;
 	var pointA;
 	var pointB;
 	var a;
 	var b;
 	var point;
+	var subgridIds = [subgrids.indexOf(subA), subgrids.indexOf(subB)];
 
 	for (i = subA.from; i < subA.to; i++) {
 		a = subA.grid.getLine(i);
@@ -140,37 +137,28 @@ Multigrid.prototype._intersections = function (callback, subA, subB) {
 
 			point = pointA.add(pointB);
 
-			intersection = {
-				subgrids: [this.subgrids.indexOf(subA), this.subgrids.indexOf(subB)],
-				point: point,
-				tuple: this.getTuple(point)
-			};
-
-
-			callback(intersection);
+			callback(isTuple ? this.getTuple(point) : point, subgridIds);
 		}
 	}
 };
 
 
-Multigrid.prototype.getPolygon = function (intersection) {
+Multigrid.prototype.getPolygon = function (subgridIds, tuple) {
 	var i;
 	var polygon;
 	var tuples;
-	var tuple;
 	var gridId;
 	var changes;
 
-	changes = 2 * intersection.subgrids.length - 2;
+	changes = 2 * subgridIds.length - 2;
 
 	tuples = new Array(changes + 1);
 	polygon = new Array(changes + 2);
 
-	tuple = intersection.tuple;
 	tuples[0] = _.clone(tuple);
 
 	for (i = 0; i < changes; i++) {
-		gridId = intersection.subgrids[i];
+		gridId = subgridIds[i];
 
 		tuples[i][gridId] += 1;
 		tuples[i + 1] = _.clone(tuple);
@@ -213,8 +201,8 @@ Multigrid.prototype._getAngle = function (subA, subB) {
 	return Math.min(angle, 2 * Math.PI - angle);
 };
 
-Multigrid.prototype._addTyleType = function (subA, subB) {
-	var angle = this._getAngle(subA, subB);
+Multigrid.prototype._addTyleType = function (subIdA, subIdB) {
+	var angle = this._getAngle(this.subgrids[subIdA], this.subgrids[subIdB]);
 	var uniqueness = angle * 1000 | 0;
 	var id = this.tileTypes.indexOf(uniqueness);
 
@@ -303,29 +291,31 @@ Multigrid.prototype.render = function (ctx) {
 
 
 
-Multigrid.prototype.renderTile = function (ctx, intersection) {
-	var polygon = this.getPolygon(intersection);
-	var subgrids = intersection.subgrids;
-	var hue;
-
-	ctx.beginPath();
-	_.each(polygon, function path (vertice, i) {
+Multigrid.prototype.renderTile = function (ctx, subgridIds, tuple) {
+	_.each(this.getPolygon(subgridIds, tuple), function path (vertice, i) {
 		if (i === 0) {
 			ctx.moveTo(vertice.re, vertice.im);
 		} else {
 			ctx.lineTo(vertice.re, vertice.im);
 		}
 	});
-	ctx.closePath();
-
-
-	hue = this._getAngle(this.subgrids[subgrids[0]], this.subgrids[subgrids[1]]) / Math.PI * 180 * 4;
-
-	ctx.fillStyle = 'hsl(' + hue + ', 60%, 60%)';
-	// ctx.stroke();
-	ctx.fill();
 };
 
-Multigrid.prototype.renderTiles = function (ctx, intersections) {
-	_.each(intersections, this.renderTile.bind(this, ctx));
+Multigrid.prototype.renderTiles = function (ctx, chunk) {
+	var subgridIds = chunk.subgridIds;
+	var hue = this._getAngle(this.subgrids[subgridIds[0]], this.subgrids[subgridIds[1]]) / Math.PI * 180 * 4;
+
+	ctx.beginPath();
+	_.each(chunk.tuples, this.renderTile.bind(this, ctx, subgridIds));
+	ctx.closePath();
+
+	ctx.fillStyle = 'hsl(' + hue + ', 55%, 55%)';
+	// ctx.stroke();
+	ctx.fill();
+
+
+
+	tilesNum += chunk.tuples.length;
 }
+
+var tilesNum = 0;

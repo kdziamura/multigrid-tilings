@@ -2,31 +2,55 @@ importScripts('Complex.js');
 importScripts('helper.js');
 importScripts('Multigrid.js');
 
-var intersections = [];
+var chunk = null;
 var chunks = [];
+var timer = null;
 
-var timer = setInterval(function() {
-	postMessage(chunks.shift());
-}, 1000/60);
-
-function stackIntersections (intersection) {
-	intersections.push(intersection);
-
-	if (intersections.length === 200) {
-		chunks.push(intersections);
-		intersections = [];
-	}
+function compare (lastSubgridIds, subgridIds) {
+	return lastSubgridIds[0] === subgridIds[0] && lastSubgridIds[1] === subgridIds[1];
 }
 
-// var interval = setInterval(function(){
-// 	postMessage(intersections);
-// 	intersections = [];
-// }, 20);
+function stackIntersections (tuple, subgridIds) {
+	if (!chunk) {
+		chunk = {
+			tuples: [],
+			subgridIds: subgridIds
+		}
+	}
+
+	if (compare(chunk.subgridIds, subgridIds) && (chunk.tuples.length !== 2000)) {
+		chunk.tuples.push(tuple);
+	} else {
+		chunks.push(chunk);
+
+		chunk = {
+			tuples: [tuple],
+			subgridIds: subgridIds
+		}
+	}
+
+}
+
+
 
 addEventListener('message', function(e) {
 	var data = e.data;
 	var multigrid = new Multigrid.byParams(data);
 
-	multigrid.processIntersections(stackIntersections);
+	multigrid.processIntersections(stackIntersections, true);
+
+
+	if (!timer) {
+		timer = setInterval(function() {
+			var shiftedChunk = chunks.shift();
+			if (shiftedChunk) {
+				postMessage(shiftedChunk);
+			} else {
+				postMessage(chunk);
+				clearInterval(timer);
+				close();
+			}
+		}, 1000/60);
+	}
 
 }, false);
