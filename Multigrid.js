@@ -69,17 +69,21 @@ function Multigrid (subgrids) {
 	// this.tiles = [];
 	// this._setTileTypes();
 
-	this.intersections = this.getIntersections();
-	this.polygons = this.getPolygons();
+	// this.polygons = this.getPolygons();
 }
 
-Multigrid.byParams = function (angleStep, shift, gridsNum, linesNum) {
+Multigrid.byParams = function (params) {
+	var angleStep = params.angleStep;
+	var shift = params.shift;
+	var gridsNum = params.gridsNum;
+	var linesNum = params.linesNum;
+
 	var subgrids = new Array(gridsNum);
 	var i;
 	var grid;
 	var angle;
 
-	for (i = 0; i < gridsNum; i++) {
+ 	for (i = 0; i < gridsNum; i++) {
 		angle = angleStep ? angleStep * i : Math.random() * 2 * Math.PI;
 		grid = new Grid(angle, shift);
 		subgrids[i] = grid.subGrid(linesNum);
@@ -88,8 +92,8 @@ Multigrid.byParams = function (angleStep, shift, gridsNum, linesNum) {
 	return new Multigrid(subgrids);
 };
 
-Multigrid.prototype.getIntersections = function () {
-	return this.processGrids(this._intersections.bind(this), []);
+Multigrid.prototype.processIntersections = function (callback) {
+	this.processGrids(this._intersections.bind(this, callback));
 };
 
 
@@ -98,7 +102,7 @@ Multigrid.prototype.getIntersections = function () {
  * @param  {Function} callback args is two subgrids to process
  * @return {Array}            array with callbacks returns
  */
-Multigrid.prototype.processGrids = function (callback, storage) {
+Multigrid.prototype.processGrids = function (callback) {
 	var subgrids = this.subgrids;
 	var length = this.subgrids.length;
 	var currentGrid;
@@ -109,15 +113,14 @@ Multigrid.prototype.processGrids = function (callback, storage) {
 		currentGrid = subgrids[i];
 
 		for (j = i + 1; j < length; j++) {
-			callback(currentGrid, subgrids[j], storage);
+			callback(currentGrid, subgrids[j]);
 		}
 	}
 
-	return storage;
 };
 
 
-Multigrid.prototype._intersections = function (subA, subB, storage) {
+Multigrid.prototype._intersections = function (callback, subA, subB) {
 	var i;
 	var j;
 	var intersection;
@@ -138,52 +141,47 @@ Multigrid.prototype._intersections = function (subA, subB, storage) {
 			point = pointA.add(pointB);
 
 			intersection = {
-				subgrids: [subA, subB],
+				subgrids: [this.subgrids.indexOf(subA), this.subgrids.indexOf(subB)],
 				point: point,
 				tuple: this.getTuple(point)
 			};
 
-			storage.push(intersection);
+
+			callback(intersection);
 		}
 	}
 };
 
 
-Multigrid.prototype.getPolygons = function () {
-	var self = this;
+Multigrid.prototype.getPolygon = function (intersection) {
+	var i;
+	var polygon;
+	var tuples;
+	var tuple;
+	var gridId;
+	var changes;
 
-	var polygons = _.map(this.intersections, function (intersection) {
-		var i;
-		var polygon;
-		var tuples;
-		var tuple;
-		var gridId;
-		var changes;
+	changes = 2 * intersection.subgrids.length - 2;
 
-		changes = 2 * intersection.subgrids.length - 2;
+	tuples = new Array(changes + 1);
+	polygon = new Array(changes + 2);
 
-		tuples = new Array(changes + 1);
-		polygon = new Array(changes + 2);
+	tuple = intersection.tuple;
+	tuples[0] = _.clone(tuple);
 
-		tuple = intersection.tuple;
-		tuples[0] = _.clone(tuple);
+	for (i = 0; i < changes; i++) {
+		gridId = intersection.subgrids[i];
 
-		for (i = 0; i < changes; i++) {
-			gridId = self.subgrids.indexOf(intersection.subgrids[i]);
+		tuples[i][gridId] += 1;
+		tuples[i + 1] = _.clone(tuple);
+		tuples[i + 1][gridId] += 1;
 
-			tuples[i][gridId] += 1;
-			tuples[i + 1] = _.clone(tuple);
-			tuples[i + 1][gridId] += 1;
+		polygon[i] = this.getVertice(tuples[i]);
+	}
+	polygon[changes] = this.getVertice(tuples[changes]);
+	polygon[changes + 1] = this.getVertice(tuple);
 
-			polygon[i] = self.getVertice(tuples[i]);
-		}
-		polygon[changes] = self.getVertice(tuples[changes]);
-		polygon[changes + 1] = self.getVertice(tuple);
-
-		return polygon;
-	});
-
-	return polygons;
+	return polygon;
 };
 
 
@@ -298,36 +296,36 @@ Multigrid.prototype._renderGrids = function (ctx) {
 };
 
 
-Multigrid.prototype._renderTiles = function (ctx) {
-	var i;
-	var hue;
-	var lightness;
-	var subgrids;
-	var length;
-
-	function renderTile (v, i) {
-		if (i === 0) {
-			ctx.moveTo(v.re, v.im);
-		} else {
-			ctx.lineTo(v.re, v.im);
-		}
-	}
-
-	length = this.polygons.length;
-
-
-	for (i = 0; i < length; i++) {
-
-		ctx.beginPath();
-		_.each(this.polygons[i], renderTile);
-		ctx.closePath();
-
-		subgrids = this.intersections[i].subgrids;
-
-		hue = this._getAngle(subgrids[0], subgrids[1]) / Math.PI * 180 * 4;
-
-		ctx.fillStyle = 'hsl(' + hue + ', 60%, 60%)';
-		ctx.stroke();
-		ctx.fill();
-	}
+Multigrid.prototype.render = function (ctx) {
+	this.processIntersections(this.renderTile.bind(this, ctx))
 };
+
+
+
+
+Multigrid.prototype.renderTile = function (ctx, intersection) {
+	var polygon = this.getPolygon(intersection);
+	var subgrids = intersection.subgrids;
+	var hue;
+
+	ctx.beginPath();
+	_.each(polygon, function path (vertice, i) {
+		if (i === 0) {
+			ctx.moveTo(vertice.re, vertice.im);
+		} else {
+			ctx.lineTo(vertice.re, vertice.im);
+		}
+	});
+	ctx.closePath();
+
+
+	hue = this._getAngle(this.subgrids[subgrids[0]], this.subgrids[subgrids[1]]) / Math.PI * 180 * 4;
+
+	ctx.fillStyle = 'hsl(' + hue + ', 60%, 60%)';
+	// ctx.stroke();
+	ctx.fill();
+};
+
+Multigrid.prototype.renderTiles = function (ctx, intersections) {
+	_.each(intersections, this.renderTile.bind(this, ctx));
+}

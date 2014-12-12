@@ -1,0 +1,22 @@
+{
+  "name": "multigrid-tilings",
+  "version": "0.0.0",
+  "description": "",
+  "main": "Complex.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wontem/multigrid-tilings.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wontem/multigrid-tilings/issues"
+  },
+  "homepage": "https://github.com/wontem/multigrid-tilings",
+  "devDependencies": {
+    "node-static": "^0.7.6"
+  }
+}

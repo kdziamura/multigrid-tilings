@@ -1,4 +1,4 @@
-window.Complex = (function() {
+Complex = (function() {
 
 
 	var math = (function () {
