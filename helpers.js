@@ -34,3 +34,15 @@ _.map = function (array, callback) {
 
 	return copy;
 };
+
+_.reduce = function (array, callback, initial) {
+	var length = array.length;
+	var i;
+	var result = initial;
+
+	for (i = 0; i < length; i++) {
+		result = callback(result, array[i], i, array);
+	}
+
+	return result;
+};

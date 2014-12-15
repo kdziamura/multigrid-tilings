@@ -1,5 +1,5 @@
 importScripts('Complex.js');
-importScripts('helper.js');
+importScripts('helpers.js');
 importScripts('Multigrid.js');
 
 var chunk = null;

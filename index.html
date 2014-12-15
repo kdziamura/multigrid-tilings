@@ -12,12 +12,13 @@
 
 		.label {
 			list-style: none;
-			position: absolute;
+			position: fixed;
 			z-index: 100;
 			background: white;
 			padding: .2rem .4rem;
 			margin: 0;
 			font-family: monospace;
+			-webkit-user-select: none;
 		}
 
 
@@ -25,29 +26,33 @@
 			position: absolute;
 			top: 0;
 			left: 0;
+			cursor: crosshair;
 		}
 
 		.overlay {
 			pointer-events: none;
 		}
 
+		.tiles:active {
+			opacity: 0;
+		}
+
 
 	</style>
+
+	<script src="dat.gui.min.js"></script>
+	<script src="helpers.js"></script>
+	<script src="Complex.js"></script>
+	<script src="Multigrid.js"></script>
+	<script src="script.js"></script>
 
 </head>
 
 
 <body>
 
-	<canvas class="tiles" width="1600" height="1600"></canvas>
-	<canvas class="overlay" width="1600" height="1600"></canvas>
-
 	<div class="label">0</div>
 
-	<script src="helper.js"></script>
-	<script src="Complex.js"></script>
-	<script src="Multigrid.js"></script>
 
-	<script src="script.js"></script>
 </body>
 </html>

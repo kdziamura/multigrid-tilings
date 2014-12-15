@@ -92,6 +92,19 @@ Multigrid.byParams = function (params) {
 	return new Multigrid(subgrids);
 };
 
+Multigrid.prototype.getIntersectionsLength = function () {
+	var linesSum = _.reduce(this.subgrids, function (sum, subgrid) {
+		return sum + subgrid.to - subgrid.from;
+	}, 0);
+
+	var result = _.reduce(this.subgrids, function (sum, subgrid) {
+		var lines = subgrid.to - subgrid.from;
+		return sum + (linesSum - lines) * lines;
+	}, 0);
+
+	return result / 2;
+};
+
 Multigrid.prototype.processIntersections = function (callback, isTuple) {
 	this.processGrids(this._intersections.bind(this, callback, isTuple));
 };
@@ -313,9 +326,4 @@ Multigrid.prototype.renderTiles = function (ctx, chunk) {
 	// ctx.stroke();
 	ctx.fill();
 
-
-
-	tilesNum += chunk.tuples.length;
 }
-
-var tilesNum = 0;

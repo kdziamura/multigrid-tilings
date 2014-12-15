@@ -1,112 +1,127 @@
 var grids = 5;
+var zoom = 15;
+var side = 1000;
+
 var multigrid;
 
-var angleStep = (1 + grids % 2) * Math.PI / grids;
-angleStep = Math.random() * 2 * Math.PI;
-
 var params = {
-	angleStep: angleStep,
+	angleStep: (1 + grids % 2) * Math.PI / grids,
 	shift: 1 / grids,
 	gridsNum: grids,
-	linesNum: 20
+	linesNum: 50
 };
 
-multigrid = Multigrid.byParams(params);
+function render (e) {
+	requestAnimationFrame(function() {
+		multigrid.renderTiles(tilesCtx, e.data);
+	});
+}
+
+var controller = {
+	reset: function () {
+		this.worker.removeEventListener('message', render, false);
+		this.worker.terminate();
+		this.worker = null;
+
+		requestAnimationFrame(function() {
+			gridsCtx.clearRect(-side/2, -side/2, side, side);
+			tilesCtx.clearRect(-side/2, -side/2, side, side);
+		});
+	},
+
+	start: function () {
+		this.worker = new Worker('data_stream.js');
+
+		if (this.randomAngle) {
+			params.angleStep = Math.random() * 2 * Math.PI;
+		}
+
+		multigrid = Multigrid.byParams(params);
+
+		this.worker.addEventListener('message', render, false);
+
+		this.worker.postMessage(params);
+
+		requestAnimationFrame(function() {
+			multigrid._renderGrids(gridsCtx);
+		});
+	},
+
+	update: function () {
+		this.reset();
+		this.start();
+	},
+
+	autoAngle: function () {
+		params.angleStep = (1 + params.gridsNum % 2) * Math.PI / params.gridsNum;
+	},
+	randomAngle: false,
+
+	worker: null
+};
 
 
 
-var canvas = document.querySelectorAll('canvas')[0];
-var ctx = canvas.getContext('2d');
-var translate = [canvas.width / 2, canvas.height / 2];
-var zoom = 10;
+
+window.onload = function() {
+	var gridsCvs = document.createElement('canvas');
+	var tilesCvs = document.createElement('canvas');
+	var overlayCvs = document.createElement('canvas');
+
+	gridsCvs.classList.add('grids');
+	tilesCvs.classList.add('tiles');
+	overlayCvs.classList.add('overlay');
+
+	gridsCtx = gridsCvs.getContext('2d');
+	tilesCtx = tilesCvs.getContext('2d');
+	overlayCtx = overlayCvs.getContext('2d');
 
 
-var canvasOverlay = document.querySelectorAll('canvas')[1];
-var ctxOverlay = canvasOverlay.getContext('2d');
+	_.each([gridsCtx, tilesCtx, overlayCtx], function (ctx) {
+		ctx.canvas.width = side;
+		ctx.canvas.height = side;
+		ctx.translate(side/2, side/2);
+		ctx.scale(zoom, zoom);
+		ctx.lineWidth = 1 / zoom;
 
-ctx.translate(translate[0], translate[1]);
-ctx.scale(zoom, zoom);
-ctx.lineWidth = 1 / zoom;
-
-ctxOverlay.translate(translate[0], translate[1]);
-ctxOverlay.scale(zoom, zoom);
-ctxOverlay.lineWidth = 1 / zoom;
-
-
-
-var textLabel = document.querySelector('.label');
-document.addEventListener('mousemove', function (e) {
-	var totalOffsetX = 0;
-	var totalOffsetY = 0;
-	var canvasX = 0;
-	var canvasY = 0;
-	var currentElement = e.target;
-	var point;
-	var tuple;
-	var interpolated;
-
-	while (currentElement) {
-		totalOffsetX += currentElement.offsetLeft - currentElement.scrollLeft;
-		totalOffsetY += currentElement.offsetTop - currentElement.scrollTop;
-		currentElement = currentElement.offsetParent;
-	}
-
-	canvasX = e.pageX - totalOffsetX;
-	canvasY = e.pageY - totalOffsetY;
-
-	point = new Complex(canvasX - translate[0], canvasY - translate[1]).div(zoom);
-	tuple = multigrid.getTuple(point);
-
-	interpolated = multigrid.getVertice(tuple);
-
-
-	textLabel.innerHTML = tuple;
-
-	window.requestAnimationFrame(function () {
-		ctxOverlay.clearRect(-translate[0], -translate[1], 2 * translate[0], 2 * translate[1]);
-		// ctxOverlay.beginPath();
-		// ctxOverlay.moveTo(point.re, point.im);
-		// ctxOverlay.lineTo(interpolated.re, interpolated.im);
-		// ctxOverlay.stroke();
-
-		ctxOverlay.beginPath();
-		ctxOverlay.arc(interpolated.re, interpolated.im, 0.2, 0, 2 * Math.PI);
-		ctxOverlay.closePath();
-		ctxOverlay.fill();
+		document.body.appendChild(ctx.canvas);
 	});
 
-});
+	overlayCtx.fillStyle = 'white';
+
+
+	var textLabel = document.querySelector('.label');
+	document.addEventListener('mousemove', function (e) {
+		var point = new Complex(e.pageX - side/2, e.pageY - side/2).div(zoom);
+		var tuple = multigrid.getTuple(point);
+
+		var interpolated = multigrid.getVertice(tuple);
+
+		textLabel.innerHTML = tuple;
+
+		window.requestAnimationFrame(function () {
+			overlayCtx.clearRect(-side/2, -side/2, side, side);
+
+			overlayCtx.beginPath();
+			overlayCtx.arc(interpolated.re, interpolated.im, 0.4, 0, 2 * Math.PI);
+			overlayCtx.closePath();
+			overlayCtx.fill();
+		});
+
+	});
 
 
 
+	var gui = new dat.GUI();
+
+	gui.add(params, 'angleStep').listen();
+	gui.add(controller, 'autoAngle');
+	gui.add(controller, 'randomAngle').listen();
+	gui.add(params, 'shift', 0, 1);
+	gui.add(params, 'gridsNum').min(2).step(1);
+	gui.add(params, 'linesNum').min(1).step(1);
+	gui.add(controller, 'update');
 
 
-
-// window.requestAnimationFrame(function animate() {
-	// ctx.clearRect(-translate[0], -translate[1], 2 * translate[0], 2 * translate[1]);
-
-
-	// multigrid._renderGrids(ctx);
-	// multigrid._renderIntersections(ctx);
-
-
-
-	// multigrid._renderTiles(ctx);
-
-	var worker = new Worker('data_stream.js');
-
-	worker.addEventListener('message', function(e) {
-	  requestAnimationFrame(function() {
-	  	multigrid.renderTiles(ctx, e.data);
-	  });
-	}, false);
-
-	worker.postMessage(params);
-
-	// multigrid.render(ctx);
-
-	// setTimeout(function () {
-	// 	multigrid = Multigrid.byParams(angleStep, 1 / grids, grids, 20);
-	// 	window.requestAnimationFrame(animate);
-	// }, 0);
-// });
+	controller.start();
+};
