@@ -18,7 +18,7 @@ function stackIntersections (tuple, subgridIds) {
 		}
 	}
 
-	if (compare(chunk.subgridIds, subgridIds) && (chunk.tuples.length !== 2000)) {
+	if (compare(chunk.subgridIds, subgridIds)) {
 		chunk.tuples.push(tuple);
 	} else {
 		chunks.push(chunk);
