@@ -1,6 +1,6 @@
 var grids = 5;
-var zoom = 15;
 var side = 1000;
+var contexts = [];
 
 var multigrid;
 
@@ -24,8 +24,7 @@ var controller = {
 		this.worker = null;
 
 		requestAnimationFrame(function() {
-			gridsCtx.clearRect(-side/2, -side/2, side, side);
-			tilesCtx.clearRect(-side/2, -side/2, side, side);
+			_.each(contexts, setupCtx);
 		});
 	},
 
@@ -57,10 +56,21 @@ var controller = {
 	},
 	randomAngle: false,
 
+	zoom: 20,
+
 	worker: null
 };
 
 
+function setupCtx (ctx) {
+	ctx.canvas.width = side;
+	ctx.canvas.height = side;
+	ctx.translate(side/2, side/2);
+	ctx.scale(controller.zoom, controller.zoom);
+	ctx.lineWidth = 1 / controller.zoom;
+
+	ctx.fillStyle = 'white';
+}
 
 
 window.onload = function() {
@@ -76,23 +86,18 @@ window.onload = function() {
 	tilesCtx = tilesCvs.getContext('2d');
 	overlayCtx = overlayCvs.getContext('2d');
 
+	contexts = [gridsCtx, tilesCtx, overlayCtx];
 
-	_.each([gridsCtx, tilesCtx, overlayCtx], function (ctx) {
-		ctx.canvas.width = side;
-		ctx.canvas.height = side;
-		ctx.translate(side/2, side/2);
-		ctx.scale(zoom, zoom);
-		ctx.lineWidth = 1 / zoom;
 
+	_.each(contexts, function (ctx) {
+		setupCtx(ctx);
 		document.body.appendChild(ctx.canvas);
 	});
-
-	overlayCtx.fillStyle = 'white';
 
 
 	var textLabel = document.querySelector('.label');
 	document.addEventListener('mousemove', function (e) {
-		var point = new Complex(e.pageX - side/2, e.pageY - side/2).div(zoom);
+		var point = new Complex(e.pageX - side/2, e.pageY - side/2).div(controller.zoom);
 		var tuple = multigrid.getTuple(point);
 
 		var interpolated = multigrid.getVertice(tuple);
@@ -117,6 +122,7 @@ window.onload = function() {
 	gui.add(params, 'angleStep').listen();
 	gui.add(controller, 'autoAngle');
 	gui.add(controller, 'randomAngle').listen();
+	gui.add(controller, 'zoom', 0);
 	gui.add(params, 'shift', 0, 1);
 	gui.add(params, 'gridsNum').min(2).step(1);
 	gui.add(params, 'linesNum').min(1).step(1);
