@@ -338,6 +338,8 @@ Complex = (function() {
 			} else {
 				result = this.re === number.re && this.im === number.im;
 			}
+
+			return result;
 		},
 
 		toString: function() {
