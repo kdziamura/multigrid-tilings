@@ -29,6 +29,7 @@ var controller = {
 	},
 
 	start: function () {
+		var zoom = this.zoom;
 		this.worker = new Worker('data_stream.js');
 
 		if (this.randomAngle) {
@@ -43,6 +44,7 @@ var controller = {
 
 		requestAnimationFrame(function() {
 			multigrid._renderGrids(gridsCtx);
+			multigrid._renderIntersections(gridsCtx, zoom);
 		});
 	},
 

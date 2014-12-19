@@ -265,16 +265,14 @@ Multigrid.prototype._preRenderTile = function (id, angle) {
 	document.body.appendChild(cvs);
 };
 
-Multigrid.prototype._renderIntersections = function (ctx) {
+Multigrid.prototype._renderIntersections = function (ctx, zoom) {
 	ctx.fillStyle = 'white';
 
 	ctx.beginPath();
 
-	_.each(this.intersections, function(intersection , i) {
-		var point = intersection.point;
-
+	this.processIntersections(function(point) {
 		ctx.moveTo(point.re, point.im);
-		ctx.arc(point.re, point.im, 0.1, 0, 2 * Math.PI);
+		ctx.arc(point.re, point.im, 1/zoom, 0, 2 * Math.PI);
 	});
 
 	ctx.closePath();
