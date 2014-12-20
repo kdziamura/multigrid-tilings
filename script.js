@@ -7,6 +7,7 @@ var multigrid;
 var params = {
 	angleStep: (1 + grids % 2) * Math.PI / grids,
 	shift: 1 / grids,
+	step: 1,
 	gridsNum: grids,
 	linesNum: 50
 };

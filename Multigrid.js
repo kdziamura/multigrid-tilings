@@ -3,9 +3,8 @@
  * @param {Radian} angle angle of initial vector
  * @param {Number} shift shift the grid
  */
-function Grid (angle, shift) {
-	var step = 1;
-
+function Grid (angle, shift, step) {
+	step = step || 1;
 	shift = shift || 0;
 
 	this.step = Complex.fromPolar(step, angle);
@@ -77,6 +76,7 @@ Multigrid.byParams = function (params) {
 	var shift = params.shift;
 	var gridsNum = params.gridsNum;
 	var linesNum = params.linesNum;
+	var step = params.step;
 
 	var subgrids = new Array(gridsNum);
 	var i;
@@ -85,7 +85,7 @@ Multigrid.byParams = function (params) {
 
  	for (i = 0; i < gridsNum; i++) {
 		angle = angleStep * i;
-		grid = new Grid(angle, shift);
+		grid = new Grid(angle, shift, step);
 		subgrids[i] = grid.subGrid(linesNum);
 	}
 
