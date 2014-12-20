@@ -138,7 +138,13 @@ Multigrid.prototype._intersections = function (callback, isTuple, subA, subB) {
 	var a;
 	var b;
 	var point;
-	var subgridIds = [subgrids.indexOf(subA), subgrids.indexOf(subB)];
+	var subgridIds;
+
+	if (this._getAngle(subA, subB) % Math.PI === 0) {
+		return;
+	}
+
+	subgridIds = [subgrids.indexOf(subA), subgrids.indexOf(subB)];
 
 	for (i = subA.from; i < subA.to; i++) {
 		a = subA.grid.getLine(i);
