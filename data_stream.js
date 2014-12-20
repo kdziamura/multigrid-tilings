@@ -15,7 +15,7 @@ function stackIntersections (tuple, subgridIds) {
 		chunk = {
 			tuples: [],
 			subgridIds: subgridIds
-		}
+		};
 	}
 
 	if (compare(chunk.subgridIds, subgridIds)) {
@@ -26,7 +26,7 @@ function stackIntersections (tuple, subgridIds) {
 		chunk = {
 			tuples: [tuple],
 			subgridIds: subgridIds
-		}
+		};
 	}
 
 }

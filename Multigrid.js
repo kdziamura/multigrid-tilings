@@ -83,7 +83,7 @@ Multigrid.byParams = function (params) {
 	var grid;
 	var angle;
 
- 	for (i = 0; i < gridsNum; i++) {
+	for (i = 0; i < gridsNum; i++) {
 		angle = angleStep * i;
 		grid = new Grid(angle, shift, step);
 		subgrids[i] = grid.subGrid(linesNum);
@@ -302,7 +302,7 @@ Multigrid.prototype._renderGrids = function (ctx) {
 
 
 Multigrid.prototype.render = function (ctx) {
-	this.processIntersections(this.renderTile.bind(this, ctx))
+	this.processIntersections(this.renderTile.bind(this, ctx));
 };
 
 
@@ -330,4 +330,4 @@ Multigrid.prototype.renderTiles = function (ctx, chunk) {
 	// ctx.stroke();
 	ctx.fill();
 
-}
+};
