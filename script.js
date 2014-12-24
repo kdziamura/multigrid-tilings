@@ -5,11 +5,12 @@ var contexts = [];
 var multigrid;
 
 var params = {
+	startPoint: [],
 	angleStep: (1 + grids % 2) * Math.PI / grids,
 	shift: 1 / grids,
 	step: 1,
 	gridsNum: grids,
-	linesNum: 50
+	linesNum: 5
 };
 
 function render (e) {
@@ -37,6 +38,10 @@ var controller = {
 			params.angleStep = Math.random() * 2 * Math.PI;
 		}
 
+		params.startPoint = _.map(this.startPoint.split(','), function (str) {
+			return parseInt(str, 10);
+		});
+
 		multigrid = Multigrid.byParams(params);
 
 		this.worker.addEventListener('message', render, false);
@@ -60,6 +65,8 @@ var controller = {
 	randomAngle: false,
 
 	zoom: 20,
+
+	startPoint: '2, -3, -3, 2, 5',
 
 	worker: null
 };
@@ -129,6 +136,7 @@ window.onload = function() {
 	gui.add(params, 'shift', 0, 1);
 	gui.add(params, 'gridsNum').min(2).step(1);
 	gui.add(params, 'linesNum').min(1).step(1);
+	gui.add(controller, 'startPoint');
 	gui.add(controller, 'update');
 
 

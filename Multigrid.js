@@ -31,7 +31,7 @@ Grid.prototype.getRibbonId = function (point) {
 };
 
 Grid.prototype.subGrid = function (length, from) {
-	from = from === undefined ? Math.floor(-length / 2) + 1 : from;
+	from = (from || 0) - Math.floor(length / 2);
 	return new SubGrid(this, from, length);
 };
 
@@ -61,7 +61,7 @@ SubGrid.prototype.render = function (ctx) {
 };
 
 
-function Multigrid (subgrids) {
+function Multigrid (subgrids, startPoint) {
 	this.subgrids = subgrids;
 
 	// this.tileTypes = [];
@@ -77,6 +77,7 @@ Multigrid.byParams = function (params) {
 	var gridsNum = params.gridsNum;
 	var linesNum = params.linesNum;
 	var step = params.step;
+	var startPoint = params.startPoint;
 
 	var subgrids = new Array(gridsNum);
 	var i;
@@ -86,10 +87,10 @@ Multigrid.byParams = function (params) {
 	for (i = 0; i < gridsNum; i++) {
 		angle = angleStep * i;
 		grid = new Grid(angle, shift, step);
-		subgrids[i] = grid.subGrid(linesNum);
+		subgrids[i] = grid.subGrid(linesNum, startPoint[i] || 0);
 	}
 
-	return new Multigrid(subgrids);
+	return new Multigrid(subgrids, startPoint);
 };
 
 Multigrid.prototype.getIntersectionsLength = function () {
@@ -215,9 +216,10 @@ Multigrid.prototype.getVertice = function (tuple) {
 
 Multigrid.prototype._getAngle = function (subA, subB) {
 	var angle = subA.grid.angle - subB.grid.angle;
+	var fullCircle = 2 * Math.PI;
 
-	angle = (angle + 2 * Math.PI) % (2 * Math.PI);
-	return Math.min(angle, 2 * Math.PI - angle);
+	angle = (angle + fullCircle) % fullCircle;
+	return Math.min(angle, fullCircle - angle);
 };
 
 Multigrid.prototype._addTyleType = function (subIdA, subIdB) {
