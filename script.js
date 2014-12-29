@@ -5,13 +5,14 @@ var contexts = [];
 var multigrid;
 
 var params = {
-	startPoint: [],
 	angleStep: (1 + grids % 2) * Math.PI / grids,
 	shift: 1 / grids,
 	step: 1,
 	gridsNum: grids,
 	linesNum: 5
 };
+
+var startPoint = new Complex(0);
 
 function render (e) {
 	requestAnimationFrame(function() {
@@ -38,15 +39,11 @@ var controller = {
 			params.angleStep = Math.random() * 2 * Math.PI;
 		}
 
-		params.startPoint = _.map(this.startPoint.split(','), function (str) {
-			return parseInt(str, 10);
-		});
-
-		multigrid = Multigrid.byParams(params);
+		multigrid = Multigrid.byParams(params, startPoint);
 
 		this.worker.addEventListener('message', render, false);
 
-		this.worker.postMessage(params);
+		this.worker.postMessage([params, startPoint]);
 
 		requestAnimationFrame(function() {
 			multigrid._renderGrids(gridsCtx);
@@ -65,8 +62,6 @@ var controller = {
 	randomAngle: false,
 
 	zoom: 20,
-
-	startPoint: '2, -3, -3, 2, 5',
 
 	worker: null
 };
@@ -112,9 +107,10 @@ window.onload = function() {
 
 		var interpolated = multigrid.getVertice(tuple);
 
-		textLabel.innerHTML = tuple;
 
 		window.requestAnimationFrame(function () {
+			textLabel.innerHTML = tuple;
+
 			overlayCtx.clearRect(-side/2, -side/2, side, side);
 
 			overlayCtx.beginPath();
@@ -125,6 +121,27 @@ window.onload = function() {
 
 	});
 
+	document.addEventListener('mousedown', function (e) {
+		var point;
+
+		if (e.ctrlKey) {
+			point = new Complex(e.pageX - side/2, e.pageY - side/2).div(controller.zoom);
+
+			startPoint = point;
+			controller.update();
+		}
+	});
+
+	document.addEventListener('keydown', function (e) {
+		if (e.keyCode === 16) {
+			tilesCvs.style.opacity = 0;
+		}
+	});
+	document.addEventListener('keyup', function (e) {
+		if (e.keyCode === 16) {
+			tilesCvs.style.opacity = 1;
+		}
+	});
 
 
 	var gui = new dat.GUI();
@@ -136,7 +153,6 @@ window.onload = function() {
 	gui.add(params, 'shift', 0, 1);
 	gui.add(params, 'gridsNum').min(2).step(1);
 	gui.add(params, 'linesNum').min(1).step(1);
-	gui.add(controller, 'startPoint');
 	gui.add(controller, 'update');
 
 

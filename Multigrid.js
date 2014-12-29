@@ -62,7 +62,18 @@ SubGrid.prototype.render = function (ctx) {
 
 
 function Multigrid (subgrids, startPoint) {
+	var tuple;
+
 	this.subgrids = subgrids;
+
+	if (startPoint) {
+		tuple = this.getTuple(startPoint);
+
+		_.each(this.subgrids, function (subgrid, i) {
+			subgrid.from += tuple[i];
+			subgrid.to += tuple[i];
+		});
+	}
 
 	// this.tileTypes = [];
 	// this.tiles = [];
@@ -71,13 +82,12 @@ function Multigrid (subgrids, startPoint) {
 	// this.polygons = this.getPolygons();
 }
 
-Multigrid.byParams = function (params) {
+Multigrid.byParams = function (params, startPoint) {
 	var angleStep = params.angleStep;
 	var shift = params.shift;
 	var gridsNum = params.gridsNum;
 	var linesNum = params.linesNum;
 	var step = params.step;
-	var startPoint = params.startPoint;
 
 	var subgrids = new Array(gridsNum);
 	var i;
@@ -87,7 +97,7 @@ Multigrid.byParams = function (params) {
 	for (i = 0; i < gridsNum; i++) {
 		angle = angleStep * i;
 		grid = new Grid(angle, shift, step);
-		subgrids[i] = grid.subGrid(linesNum, startPoint[i] || 0);
+		subgrids[i] = grid.subGrid(linesNum);
 	}
 
 	return new Multigrid(subgrids, startPoint);

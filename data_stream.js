@@ -35,7 +35,7 @@ function stackIntersections (tuple, subgridIds) {
 
 addEventListener('message', function(e) {
 	var data = e.data;
-	var multigrid = new Multigrid.byParams(data);
+	var multigrid = new Multigrid.byParams(data[0], data[1]);
 
 	multigrid.processIntersections(stackIntersections, true);
 
