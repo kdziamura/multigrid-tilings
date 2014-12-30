@@ -89,6 +89,10 @@ Complex = (function() {
 	};
 
 	Complex.prototype = {
+		getVector: function() {
+			return [this.re, this.im];
+		},
+
 		copy: function() {
 			return new Complex(this.re, this.im);
 		},

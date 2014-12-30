@@ -116,8 +116,27 @@ Multigrid.prototype.getIntersectionsLength = function () {
 	return result / 2;
 };
 
-Multigrid.prototype.processIntersections = function (callback, isTuple) {
-	this.processGrids(this._intersections.bind(this, callback, isTuple));
+Multigrid.prototype.processIntersections = function (callback) {
+	this.processGrids(this._intersections.bind(this, callback));
+};
+
+Multigrid.prototype._processTuple = function (callback, point, subgridIds) {
+	var tuple = this.getTuple(point);
+	callback(tuple, subgridIds);
+};
+
+Multigrid.prototype.processTuples = function (callback) {
+	this.processIntersections(this._processTuple.bind(this, callback));
+};
+
+Multigrid.prototype._processPolygon = function (callback, tuple, subgridIds) {
+	var polygon = this.getPolygon(tuple, subgridIds);
+	callback(polygon, subgridIds);
+};
+
+
+Multigrid.prototype.processPolygons = function (callback) {
+	this.processTuples(this._processPolygon.bind(this, callback));
 };
 
 /**
@@ -140,7 +159,7 @@ Multigrid.prototype.processGrids = function (callback) {
 };
 
 
-Multigrid.prototype._intersections = function (callback, isTuple, subA, subB) {
+Multigrid.prototype._intersections = function (callback, subA, subB) {
 	var subgrids = this.subgrids;
 	var i;
 	var j;
@@ -167,13 +186,13 @@ Multigrid.prototype._intersections = function (callback, isTuple, subA, subB) {
 
 			point = pointA.add(pointB);
 
-			callback(isTuple ? this.getTuple(point) : point, subgridIds);
+			callback(point, subgridIds);
 		}
 	}
 };
 
 
-Multigrid.prototype.getPolygon = function (subgridIds, tuple) {
+Multigrid.prototype.getPolygon = function (tuple, subgridIds) {
 	var i;
 	var polygon;
 	var tuples;
@@ -283,21 +302,6 @@ Multigrid.prototype._preRenderTile = function (id, angle) {
 	document.body.appendChild(cvs);
 };
 
-Multigrid.prototype._renderIntersections = function (ctx, zoom) {
-	ctx.fillStyle = 'white';
-
-	ctx.beginPath();
-
-	this.processIntersections(function(point) {
-		ctx.moveTo(point.re, point.im);
-		ctx.arc(point.re, point.im, 1/zoom, 0, 2 * Math.PI);
-	});
-
-	ctx.closePath();
-
-	ctx.fill();
-};
-
 Multigrid.prototype._renderGrids = function (ctx) {
 	var subgridsLength = this.subgrids.length;
 	var colorStep = 360 / subgridsLength;
@@ -312,16 +316,8 @@ Multigrid.prototype._renderGrids = function (ctx) {
 	ctx.restore();
 };
 
-
-Multigrid.prototype.render = function (ctx) {
-	this.processIntersections(this.renderTile.bind(this, ctx));
-};
-
-
-
-
-Multigrid.prototype.renderTile = function (ctx, subgridIds, tuple) {
-	_.each(this.getPolygon(subgridIds, tuple), function path (vertice, i) {
+Multigrid.prototype.renderPolygon = function (ctx, subgridIds, polygon) {
+	_.each(polygon, function path (vertice, i) {
 		if (i === 0) {
 			ctx.moveTo(vertice.re, vertice.im);
 		} else {
@@ -335,11 +331,27 @@ Multigrid.prototype.renderTiles = function (ctx, chunk) {
 	var hue = this._getAngle(this.subgrids[subgridIds[0]], this.subgrids[subgridIds[1]]) / Math.PI * 180 * 4;
 
 	ctx.beginPath();
-	_.each(chunk.tuples, this.renderTile.bind(this, ctx, subgridIds));
+	_.each(chunk.polygons, this.renderPolygon.bind(this, ctx, subgridIds));
 	ctx.closePath();
 
 	ctx.fillStyle = 'hsl(' + hue + ', 55%, 55%)';
-	// ctx.stroke();
 	ctx.fill();
-
 };
+
+
+// function Renderer(params) {
+// 	this.zoom = params.zoom;
+// 	this.size = params.size;
+// 	this.sides = params.sides;
+// 	this.multigrid = params.multigrid;
+
+
+// 	this.cvs = {};
+// 	this.createCvs('grids');
+// 	this.createCvs('tiles');
+// 	this.createCvs('overlay');
+// }
+
+// Renderer.prototype.createCvs = function (storage) {
+
+// }

@@ -1,6 +1,7 @@
 var grids = 5;
 var side = 1000;
 var contexts = [];
+var center = new Complex(side/2, side/2);
 
 var multigrid;
 
@@ -14,17 +15,56 @@ var params = {
 
 var startPoint = new Complex(0);
 
-function render (e) {
-	requestAnimationFrame(function() {
-		multigrid.renderTiles(tilesCtx, e.data);
+
+
+var chunks = [];
+function render () {
+	var chunk = chunks.shift();
+	if (chunk) {
+		multigrid.renderTiles(tilesCtx, chunk);
+	}
+	requestAnimationFrame(render);
+}
+
+function renderIntersections(e) {
+
+	requestAnimationFrame(function () {
+		gridsCtx.fillStyle = 'white';
+
+		gridsCtx.beginPath();
+
+		_.each(e.data, function(point) {
+			gridsCtx.moveTo(point.re, point.im);
+			gridsCtx.arc(point.re, point.im, 1/controller.zoom, 0, 2 * Math.PI);
+		});
+
+		gridsCtx.closePath();
+
+		gridsCtx.fill();
 	});
+}
+
+function stackChunks(e) {
+	chunks.push(e.data);
+}
+
+function getPoint(e) {
+	return new Complex(e.pageX, e.pageY).sub(center).div(controller.zoom);
 }
 
 var controller = {
 	reset: function () {
-		this.worker.removeEventListener('message', render, false);
-		this.worker.terminate();
-		this.worker = null;
+		this.polygonsStream.removeEventListener('message', stackChunks, false);
+		this.polygonsStream.terminate();
+		this.polygonsStream = null;
+
+		this.intersectionsStream.removeEventListener('message', renderIntersections, false);
+		this.intersectionsStream.terminate();
+		this.intersectionsStream = null;
+
+
+		cancelAnimationFrame(render);
+		chunks = [];
 
 		requestAnimationFrame(function() {
 			_.each(contexts, setupCtx);
@@ -33,7 +73,8 @@ var controller = {
 
 	start: function () {
 		var zoom = this.zoom;
-		this.worker = new Worker('data_stream.js');
+		this.polygonsStream = new Worker('data_stream.js');
+		this.intersectionsStream = new Worker('process_intersections.js');
 
 		if (this.randomAngle) {
 			params.angleStep = Math.random() * 2 * Math.PI;
@@ -41,14 +82,18 @@ var controller = {
 
 		multigrid = Multigrid.byParams(params, startPoint);
 
-		this.worker.addEventListener('message', render, false);
+		this.polygonsStream.addEventListener('message', stackChunks, false);
+		this.polygonsStream.postMessage([params, startPoint]);
 
-		this.worker.postMessage([params, startPoint]);
+		this.intersectionsStream.addEventListener('message', renderIntersections, false);
+		this.intersectionsStream.postMessage([params, startPoint]);
+
 
 		requestAnimationFrame(function() {
 			multigrid._renderGrids(gridsCtx);
-			multigrid._renderIntersections(gridsCtx, zoom);
 		});
+
+		requestAnimationFrame(render);
 	},
 
 	update: function () {
@@ -63,7 +108,8 @@ var controller = {
 
 	zoom: 20,
 
-	worker: null
+	polygonsStream: null,
+	intersectionsStream: null
 };
 
 
@@ -102,11 +148,10 @@ window.onload = function() {
 
 	var textLabel = document.querySelector('.label');
 	document.addEventListener('mousemove', function (e) {
-		var point = new Complex(e.pageX - side/2, e.pageY - side/2).div(controller.zoom);
+		var point = getPoint(e);
 		var tuple = multigrid.getTuple(point);
 
 		var interpolated = multigrid.getVertice(tuple);
-
 
 		window.requestAnimationFrame(function () {
 			textLabel.innerHTML = tuple;
@@ -125,7 +170,7 @@ window.onload = function() {
 		var point;
 
 		if (e.ctrlKey) {
-			point = new Complex(e.pageX - side/2, e.pageY - side/2).div(controller.zoom);
+			point = getPoint(e);
 
 			startPoint = point;
 			controller.update();
