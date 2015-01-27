@@ -31,7 +31,43 @@ function getNewPopulation (multigrid, toSurvive, toBirth, population) {
 	return newPopulation;
 }
 
-var toBirth = [1];
+function randomPopulation (multigrid, maxLength) {
+	var population = [];
+	var i = 0;
+	var cell = '';
+
+	var gridsLength = multigrid.subgrids.length;
+
+	for (; i < maxLength; i++) {
+		subgridId = Math.floor(Math.random() * (gridsLength - 1));
+		subgrid = multigrid.subgrids[subgridId];
+		line = subgrid.from + Math.floor(Math.random() * (subgrid.to - subgrid.from));
+
+		cell = subgridId + ',' + line;
+
+		subgridId = subgridId + 1 + Math.floor(Math.random() * (gridsLength - subgridId - 2));
+		subgrid = multigrid.subgrids[subgridId];
+		line = subgrid.from + Math.floor(Math.random() * (subgrid.to - subgrid.from));
+
+		cell += ',' + subgridId + ',' + line;
+
+		toggleCell(population, cell);
+	}
+
+	return population;
+}
+
+function toggleCell (population, cell) {
+	var cellId = population.indexOf(cell);
+
+	if (cellId !== -1) {
+		population.splice(cellId, 1);
+	} else {
+		population.push(cell);
+	}
+}
+
+var toBirth = [3];
 var toSurvive = [2, 3];
 
 var population;
@@ -39,7 +75,6 @@ var multigrid;
 
 addEventListener('message', function (e) {
 	var data = e.data;
-	var cellId;
 
 	if (data.type === 'init') {
 		multigrid = Multigrid.byParams(data.params);
@@ -47,13 +82,9 @@ addEventListener('message', function (e) {
 	} else if (data.type === 'step') {
 		population = getNewPopulation(multigrid, toSurvive, toBirth, population);
 	} else if (data.type === 'toggle') {
-		cellId = population.indexOf(data.cell);
-
-		if (cellId !== -1) {
-			population.splice(cellId, 1);
-		} else {
-			population.push(data.cell);
-		}
+		toggleCell(population, data.cell);
+	} else if (data.type === 'randomize') {
+		population = randomPopulation(multigrid, data.maxLength);
 	}
 
 	var polygons = _.map(population, function (cell) {

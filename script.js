@@ -51,13 +51,15 @@ function renderPopulation(e) {
 	var polygons = e.data;
 
 	setupCtx(golCtx);
-	golCtx.fillStyle = 'navy';
+	golCtx.fillStyle = 'gold';
+	golCtx.strokeStyle = 'orange';
 
 	requestAnimationFrame(function () {
 		golCtx.beginPath();
 		_.each(polygons, multigrid.renderPolygon.bind(multigrid, golCtx, null));
 		golCtx.closePath();
 		golCtx.fill();
+		golCtx.stroke();
 	});
 }
 
@@ -135,6 +137,13 @@ var controller = {
 	golStep: function () {
 		this.gameOfLifeStream.postMessage({
 			type: 'step'
+		});
+	},
+
+	golRandom: function () {
+		this.gameOfLifeStream.postMessage({
+			type: 'randomize',
+			maxLength: 200
 		});
 	},
 
@@ -284,6 +293,7 @@ window.onload = function() {
 	gui.add(params, 'gridsNum').min(2).step(1);
 	gui.add(params, 'linesNum').min(1).step(1);
 	gui.add(controller, 'golStep');
+	gui.add(controller, 'golRandom');
 	gui.add(controller, 'update');
 
 
