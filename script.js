@@ -150,11 +150,22 @@ var controller = {
 		});
 	},
 
+	golRun: function () {
+		if (this.interval) {
+			clearInterval(this.interval);
+			this.interval = null;
+		} else {
+			this.interval = setInterval(this.golStep.bind(this), 50);
+		}
+	},
+
 	randomAngle: false,
 
 	toBirth: '3',
 	toSurvive: '2,3',
 	isNeumannOnly: false,
+	interval: null,
+
 	zoom: zoom,
 
 	polygonsStream: null,
@@ -306,6 +317,7 @@ window.onload = function() {
 	f2.add(controller, 'toSurvive');
 	f2.add(controller, 'golRandom');
 	f2.add(controller, 'golStep');
+	f2.add(controller, 'golRun');
 	f2.add(controller, 'isNeumannOnly');
 
 	gui.add(controller, 'update');
