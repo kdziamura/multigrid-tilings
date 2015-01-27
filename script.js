@@ -237,7 +237,7 @@ window.onload = function() {
 			var minDist = null;
 
 			_.each(cache.nearestIntersections, function (intersection) {
-				var dist = new Complex(intersection[0]).sub(point).abs()
+				var dist = new Complex(intersection[0]).sub(point).abs();
 				if (minDist === null || dist < minDist) {
 					minDist = dist;
 					nearestIntersection = intersection;

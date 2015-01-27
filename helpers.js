@@ -73,9 +73,9 @@ _.findIndex = function (array, check) {
 };
 
 _.contains = function (array, target, fromIndex) {
-	var fromIndex = (fromIndex < 0 ? Math.max(0, array.length + fromIndex) : fromIndex) || 0;
+	fromIndex = (fromIndex < 0 ? Math.max(0, array.length + fromIndex) : fromIndex) || 0;
     return array.indexOf(target, fromIndex) > -1;
-}
+};
 
 _.every = function (array, check) {
 	var length = array.length;
@@ -88,4 +88,4 @@ _.every = function (array, check) {
 	}
 
 	return true;
-}
+};
