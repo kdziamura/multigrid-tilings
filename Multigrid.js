@@ -499,8 +499,8 @@ Multigrid.prototype._preRenderTile = function (id, angle) {
 	ctx.lineTo(w, 1);
 	ctx.lineTo(x, 1);
 
-	ctx.closePath();
 	ctx.fill();
+	ctx.closePath();
 
 	document.body.appendChild(cvs);
 };
@@ -537,10 +537,10 @@ Multigrid.prototype.renderTiles = function (ctx, chunk) {
 
 	ctx.beginPath();
 	_.each(chunk.polygons, this.renderPolygon.bind(this, ctx, subgridIds));
-	ctx.closePath();
 
 	ctx.fillStyle = 'hsl(' + hue + ', 55%, 55%)';
 	ctx.fill();
+	ctx.closePath();
 };
 
 

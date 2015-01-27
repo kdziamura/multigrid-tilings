@@ -41,9 +41,8 @@ function renderIntersections(e) {
 			gridsCtx.arc(point.re, point.im, 1/controller.zoom, 0, 2 * Math.PI);
 		});
 
-		gridsCtx.closePath();
-
 		gridsCtx.fill();
+		gridsCtx.closePath();
 	});
 }
 
@@ -57,9 +56,9 @@ function renderPopulation(e) {
 	requestAnimationFrame(function () {
 		golCtx.beginPath();
 		_.each(polygons, multigrid.renderPolygon.bind(multigrid, golCtx, null));
-		golCtx.closePath();
 		golCtx.fill();
 		golCtx.stroke();
+		golCtx.closePath();
 	});
 }
 
@@ -262,15 +261,15 @@ window.onload = function() {
 			overlayCtx.fillStyle = 'hsla(0, 100%, 100%, 0.3)';
 			overlayCtx.beginPath();
 			multigrid.renderPolygon(overlayCtx, null, polygon);
-			overlayCtx.closePath();
-			overlayCtx.stroke();
 			overlayCtx.fill();
+			overlayCtx.stroke();
+			overlayCtx.closePath();
 
 			overlayCtx.fillStyle = 'white';
 			overlayCtx.beginPath();
 			overlayCtx.arc(cache.interpolated.re, cache.interpolated.im, 0.2, 0, 2 * Math.PI);
-			overlayCtx.closePath();
 			overlayCtx.fill();
+			overlayCtx.closePath();
 		});
 
 	});
