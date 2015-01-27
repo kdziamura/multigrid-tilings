@@ -150,12 +150,14 @@ var controller = {
 		});
 	},
 
-	golRun: function () {
-		if (this.interval) {
+	golRun: false,
+
+	golToggleRun: function (isRun) {
+		if (isRun) {
+			this.interval = setInterval(this.golStep.bind(this), 50);
+		} else {
 			clearInterval(this.interval);
 			this.interval = null;
-		} else {
-			this.interval = setInterval(this.golStep.bind(this), 50);
 		}
 	},
 
@@ -317,8 +319,10 @@ window.onload = function() {
 	f2.add(controller, 'toSurvive');
 	f2.add(controller, 'golRandom');
 	f2.add(controller, 'golStep');
-	f2.add(controller, 'golRun');
+	var runGol = f2.add(controller, 'golRun');
 	f2.add(controller, 'isNeumannOnly');
+
+	runGol.onChange(controller.golToggleRun.bind(controller));
 
 	gui.add(controller, 'update');
 
