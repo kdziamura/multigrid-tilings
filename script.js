@@ -1,3 +1,6 @@
+(function () {
+
+var zoom = 50;
 var grids = 5;
 var side = 1000;
 var contexts = [];
@@ -44,6 +47,20 @@ function renderIntersections(e) {
 	});
 }
 
+function renderPopulation(e) {
+	var polygons = e.data;
+
+	setupCtx(golCtx);
+	golCtx.fillStyle = 'navy';
+
+	requestAnimationFrame(function () {
+		golCtx.beginPath();
+		_.each(polygons, multigrid.renderPolygon.bind(multigrid, golCtx, null));
+		golCtx.closePath();
+		golCtx.fill();
+	});
+}
+
 function stackChunks(e) {
 	chunks.push(e.data);
 }
@@ -62,6 +79,10 @@ var controller = {
 		this.intersectionsStream.terminate();
 		this.intersectionsStream = null;
 
+		this.gameOfLifeStream.removeEventListener('message', renderPopulation, false);
+		this.gameOfLifeStream.terminate();
+		this.gameOfLifeStream = null;
+
 
 		cancelAnimationFrame(render);
 		chunks = [];
@@ -75,6 +96,7 @@ var controller = {
 		var zoom = this.zoom;
 		this.polygonsStream = new Worker('data_stream.js');
 		this.intersectionsStream = new Worker('process_intersections.js');
+		this.gameOfLifeStream = new Worker('game_of_life.js');
 
 		if (this.randomAngle) {
 			params.angleStep = Math.random() * 2 * Math.PI;
@@ -88,6 +110,11 @@ var controller = {
 		this.intersectionsStream.addEventListener('message', renderIntersections, false);
 		this.intersectionsStream.postMessage([params, startPoint]);
 
+		this.gameOfLifeStream.addEventListener('message', renderPopulation, false);
+		this.gameOfLifeStream.postMessage({
+			params: params,
+			type: 'init'
+		});
 
 		requestAnimationFrame(function() {
 			multigrid._renderGrids(gridsCtx);
@@ -104,12 +131,20 @@ var controller = {
 	autoAngle: function () {
 		params.angleStep = (1 + params.gridsNum % 2) * Math.PI / params.gridsNum;
 	},
+
+	golStep: function () {
+		this.gameOfLifeStream.postMessage({
+			type: 'step'
+		});
+	},
+
 	randomAngle: false,
 
-	zoom: 20,
+	zoom: zoom,
 
 	polygonsStream: null,
-	intersectionsStream: null
+	intersectionsStream: null,
+	gameOfLifeStream: null
 };
 
 
@@ -121,23 +156,29 @@ function setupCtx (ctx) {
 	ctx.lineWidth = 1 / controller.zoom;
 
 	ctx.fillStyle = 'white';
+	ctx.strokeStyle = 'white';
 }
 
 
 window.onload = function() {
+	var cache = {};
+
 	var gridsCvs = document.createElement('canvas');
 	var tilesCvs = document.createElement('canvas');
 	var overlayCvs = document.createElement('canvas');
+	var golCvs = document.createElement('canvas');
 
 	gridsCvs.classList.add('grids');
 	tilesCvs.classList.add('tiles');
 	overlayCvs.classList.add('overlay');
+	golCvs.classList.add('gol');
 
 	gridsCtx = gridsCvs.getContext('2d');
 	tilesCtx = tilesCvs.getContext('2d');
 	overlayCtx = overlayCvs.getContext('2d');
+	golCtx = golCvs.getContext('2d');
 
-	contexts = [gridsCtx, tilesCtx, overlayCtx];
+	contexts = [gridsCtx, tilesCtx, golCtx, overlayCtx];
 
 
 	_.each(contexts, function (ctx) {
@@ -151,15 +192,55 @@ window.onload = function() {
 		var point = getPoint(e);
 		var tuple = multigrid.getTuple(point);
 
-		var interpolated = multigrid.getVertice(tuple);
+		var intersectionTuple;
+		var subgridIds;
+		var nearestIntersection;
+
+		if (!_.every(tuple, function (val, key, tuple) {
+			return cache.tuple && val === cache.tuple[key];
+		})) {
+			cache.tuple = tuple;
+			cache.interpolated = multigrid.getVertice(tuple);
+			cache.nearestIntersections = multigrid._getVerticeNeigbourhood(point);
+		}
+
+		nearestIntersection = (function () {
+			var nearestIntersection = null;
+			var minDist = null;
+
+			_.each(cache.nearestIntersections, function (intersection) {
+				var dist = new Complex(intersection[0]).sub(point).abs()
+				if (minDist === null || dist < minDist) {
+					minDist = dist;
+					nearestIntersection = intersection;
+				}
+			});
+
+			return nearestIntersection;
+		})();
+
+		cache.coords = nearestIntersection[1];
+
+		intersectionTuple = multigrid.getTuple(nearestIntersection[0]);
+		subgridIds = [cache.coords[0][0], cache.coords[1][0]];
+		polygon = multigrid.getPolygon(intersectionTuple, subgridIds);
 
 		window.requestAnimationFrame(function () {
 			textLabel.innerHTML = tuple;
 
 			overlayCtx.clearRect(-side/2, -side/2, side, side);
+			overlayCtx.lineWidth = 2 / controller.zoom;
 
+			overlayCtx.fillStyle = 'hsla(0, 100%, 100%, 0.3)';
 			overlayCtx.beginPath();
-			overlayCtx.arc(interpolated.re, interpolated.im, 0.4, 0, 2 * Math.PI);
+			multigrid.renderPolygon(overlayCtx, null, polygon);
+			overlayCtx.closePath();
+			overlayCtx.stroke();
+			overlayCtx.fill();
+
+			overlayCtx.fillStyle = 'white';
+			overlayCtx.beginPath();
+			overlayCtx.arc(cache.interpolated.re, cache.interpolated.im, 0.2, 0, 2 * Math.PI);
 			overlayCtx.closePath();
 			overlayCtx.fill();
 		});
@@ -167,13 +248,17 @@ window.onload = function() {
 	});
 
 	document.addEventListener('mousedown', function (e) {
-		var point;
+		var point = getPoint(e);
+		var cell;
 
 		if (e.ctrlKey) {
-			point = getPoint(e);
-
 			startPoint = point;
 			controller.update();
+		} else if (e.target === overlayCvs) {
+			controller.gameOfLifeStream.postMessage({
+				type: 'toggle',
+				cell: multigrid._getCellCoordinates(cache.coords)
+			});
 		}
 	});
 
@@ -198,8 +283,11 @@ window.onload = function() {
 	gui.add(params, 'shift', 0, 1);
 	gui.add(params, 'gridsNum').min(2).step(1);
 	gui.add(params, 'linesNum').min(1).step(1);
+	gui.add(controller, 'golStep');
 	gui.add(controller, 'update');
 
 
 	controller.start();
 };
+
+}).call(null);

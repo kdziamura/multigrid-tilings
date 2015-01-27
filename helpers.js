@@ -35,6 +35,18 @@ _.map = function (array, callback) {
 	return copy;
 };
 
+_.eachPairs = function (array, callback) {
+	var length = array.length;
+	var i;
+	var j;
+
+	for (i = 0; i < length - 1; i++) {
+		for (j = i + 1; j < length; j++) {
+			callback(array[i], array[j]);
+		}
+	}
+};
+
 _.reduce = function (array, callback, initial) {
 	var length = array.length;
 	var i;
@@ -46,3 +58,34 @@ _.reduce = function (array, callback, initial) {
 
 	return result;
 };
+
+_.findIndex = function (array, check) {
+	var length = array.length;
+	var i;
+
+	for (i = 0; i < length; i++) {
+		if (check(array[i], i, array)) {
+			return i;
+		}
+	}
+
+	return -1;
+};
+
+_.contains = function (array, target, fromIndex) {
+	var fromIndex = (fromIndex < 0 ? Math.max(0, array.length + fromIndex) : fromIndex) || 0;
+    return array.indexOf(target, fromIndex) > -1;
+}
+
+_.every = function (array, check) {
+	var length = array.length;
+	var i;
+
+	for (i = 0; i < length; i++) {
+		if (!check(array[i], i, array)) {
+			return false;
+		}
+	}
+
+	return true;
+}
