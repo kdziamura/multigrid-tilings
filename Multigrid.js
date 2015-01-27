@@ -320,18 +320,19 @@ Multigrid.prototype._getVerticeNeigbourhood = function (point, subgridIds) {
 	return intersections;
 };
 
-Multigrid.prototype.getNeighbourhood = function (cell) {
+Multigrid.prototype.getNeighbourhood = function (cell, isVonNeumannOnly) {
 	var centerCoordinates = this._parseLineCoordinates(cell);
 
-	return _.map(this._getNeighbourhood(centerCoordinates), (function (intersection) {
+	return _.map(this._getNeighbourhood(centerCoordinates, isVonNeumannOnly), (function (intersection) {
 		return this._getCellCoordinates(intersection[1]);
 	}).bind(this));
 };
 
-Multigrid.prototype._getNeighbourhood = function (centerCoordinates) {
+Multigrid.prototype._getNeighbourhood = function (centerCoordinates, isVonNeumannOnly) {
 	var getIntersection = this.getIntersection.bind(this);
 	var centerIntersection = getIntersection(centerCoordinates);
 	var intersections = this._getVerticeNeigbourhood(centerIntersection, [centerCoordinates[0][0], centerCoordinates[1][0]]);
+	var vonNeumannNeighbourhood = [];
 
 	// von Neumann neighbourhood
 	_.each(centerCoordinates, (function (lineCoordinate) {
@@ -374,13 +375,13 @@ Multigrid.prototype._getNeighbourhood = function (centerCoordinates) {
 			) ? a[0] : a[1];
 
 			var lineCoordinates = [lineCoordinate, coordB];
-			intersections.push([getIntersection(lineCoordinates), lineCoordinates]);
+			vonNeumannNeighbourhood.push([getIntersection(lineCoordinates), lineCoordinates]);
 		});
 
 	}).bind(this));
 
 
-	return intersections;
+	return isVonNeumannOnly ? vonNeumannNeighbourhood : intersections.concat(vonNeumannNeighbourhood);
 };
 
 Multigrid.prototype.getPolygon = function (tuple, subgridIds) {

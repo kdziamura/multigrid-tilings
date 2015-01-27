@@ -117,7 +117,8 @@ var controller = {
 			type: 'init',
 			params: params,
 			toBirth: this.toBirth,
-			toSurvive: this.toSurvive
+			toSurvive: this.toSurvive,
+			isNeumannOnly: this.isNeumannOnly
 		});
 
 		requestAnimationFrame(function() {
@@ -153,6 +154,7 @@ var controller = {
 
 	toBirth: '3',
 	toSurvive: '2,3',
+	isNeumannOnly: false,
 	zoom: zoom,
 
 	polygonsStream: null,
@@ -304,6 +306,7 @@ window.onload = function() {
 	f2.add(controller, 'toSurvive');
 	f2.add(controller, 'golRandom');
 	f2.add(controller, 'golStep');
+	f2.add(controller, 'isNeumannOnly');
 
 	gui.add(controller, 'update');
 

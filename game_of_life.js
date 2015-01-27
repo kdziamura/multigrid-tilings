@@ -6,7 +6,7 @@ function getNewPopulation (multigrid, toSurvive, toBirth, population) {
 	var cellsWeight = {};
 	// Get cells weight
 	_.each(population, function (cell) {
-		var neighbourhood = multigrid.getNeighbourhood(cell);
+		var neighbourhood = multigrid.getNeighbourhood(cell, isNeumannOnly);
 
 		_.each(neighbourhood, function (cell) {
 			if (cellsWeight[cell] !== undefined) {
@@ -82,6 +82,7 @@ var toSurvive = [];
 
 var population;
 var multigrid;
+var isNeumannOnly = false;
 
 addEventListener('message', function (e) {
 	var data = e.data;
@@ -89,6 +90,7 @@ addEventListener('message', function (e) {
 	if (data.type === 'init') {
 		multigrid = Multigrid.byParams(data.params);
 		parseRule(data.toBirth, data.toSurvive);
+		isNeumannOnly = data.isNeumannOnly;
 		population = [];
 	} else if (data.type === 'step') {
 		population = getNewPopulation(multigrid, toSurvive, toBirth, population);
