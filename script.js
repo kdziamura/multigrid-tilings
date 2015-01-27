@@ -114,8 +114,10 @@ var controller = {
 
 		this.gameOfLifeStream.addEventListener('message', renderPopulation, false);
 		this.gameOfLifeStream.postMessage({
+			type: 'init',
 			params: params,
-			type: 'init'
+			toBirth: this.toBirth,
+			toSurvive: this.toSurvive
 		});
 
 		requestAnimationFrame(function() {
@@ -149,6 +151,8 @@ var controller = {
 
 	randomAngle: false,
 
+	toBirth: '3',
+	toSurvive: '2,3',
 	zoom: zoom,
 
 	polygonsStream: null,
@@ -285,17 +289,26 @@ window.onload = function() {
 
 	var gui = new dat.GUI();
 
-	gui.add(params, 'angleStep').listen();
-	gui.add(controller, 'autoAngle');
-	gui.add(controller, 'randomAngle').listen();
-	gui.add(controller, 'zoom', 0);
-	gui.add(params, 'shift', 0, 1);
-	gui.add(params, 'gridsNum').min(2).step(1);
-	gui.add(params, 'linesNum').min(1).step(1);
-	gui.add(controller, 'golStep');
-	gui.add(controller, 'golRandom');
+	var f1 = gui.addFolder('Multigrid params');
+	var f2 = gui.addFolder('Game of Life');
+
+	f1.add(params, 'angleStep').listen();
+	f1.add(controller, 'autoAngle');
+	f1.add(controller, 'randomAngle').listen();
+	f1.add(controller, 'zoom', 0);
+	f1.add(params, 'shift', 0, 1);
+	f1.add(params, 'gridsNum').min(2).step(1);
+	f1.add(params, 'linesNum').min(1).step(1);
+
+	f2.add(controller, 'toBirth');
+	f2.add(controller, 'toSurvive');
+	f2.add(controller, 'golRandom');
+	f2.add(controller, 'golStep');
+
 	gui.add(controller, 'update');
 
+	f1.open();
+	f2.open();
 
 	controller.start();
 };

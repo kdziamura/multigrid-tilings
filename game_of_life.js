@@ -67,8 +67,18 @@ function toggleCell (population, cell) {
 	}
 }
 
-var toBirth = [3];
-var toSurvive = [2, 3];
+function parseRule (toBirthStr, toSurviveStr) {
+	toBirth = _.map(toBirthStr.split(','), function (n) {
+		return parseInt(n, 10);
+	});
+
+	toSurvive = _.map(toSurviveStr.split(','), function (n) {
+		return parseInt(n, 10);
+	});
+}
+
+var toBirth = [];
+var toSurvive = [];
 
 var population;
 var multigrid;
@@ -78,6 +88,7 @@ addEventListener('message', function (e) {
 
 	if (data.type === 'init') {
 		multigrid = Multigrid.byParams(data.params);
+		parseRule(data.toBirth, data.toSurvive);
 		population = [];
 	} else if (data.type === 'step') {
 		population = getNewPopulation(multigrid, toSurvive, toBirth, population);
