@@ -3,24 +3,25 @@
  * @param {Radian} angle angle of initial vector
  * @param {Number} shift shift the grid
  */
-function Grid (angle, shift, step) {
-	step = step || 1;
-	shift = shift || 0;
+function Grid (angle, shiftLength, unitInterval) {
+	unitInterval = unitInterval || 1;
+	shiftLength = shiftLength || 0;
 
-	this.step = Complex.fromPolar(step, angle);
-	this.shift = Complex.fromPolar(shift, angle);
-	this.initial = new Complex(0, 1).mul(this.step);
+	var vector = Complex.fromPolar(1, angle);
+
+	this.unitVector = new Complex(vector).mul(unitInterval);
+	this.normal = new Complex(0, 1).mul(vector);
 
 	this.angle = angle;
-	this.scalarStep = step;
-	this.scalarShift = shift;
+	this.unitInterval = unitInterval;
+	this.shiftLength = shiftLength;
 
 }
 
 Grid.OBSERVATION_ERROR = 0.0000001;
 
 Grid.prototype.getLine = function (id) {
-	return Complex.fromPolar(id * this.scalarStep + this.scalarShift, this.angle);
+	return Complex.fromPolar(id * this.unitInterval + this.shiftLength, this.angle);
 };
 
 Grid.prototype.getRibbonId = function (point) {
@@ -33,12 +34,12 @@ Grid.prototype.getRibbonId = function (point) {
 };
 
 Grid.prototype.getСoordinate = function (point) {
-	var line = (this.step.dot(point) - this.scalarShift) / this.scalarStep;
+	var line = (this.unitVector.dot(point) / this.unitInterval - this.shiftLength) / this.unitInterval;
 	return line;
 };
 
 Grid.prototype.renderLine = function (ctx, lineId) {
-	var half = new Complex(this.initial).mul(ctx.canvas.height);
+	var half = new Complex(this.normal).mul(ctx.canvas.height);
 	var line = this.getLine(lineId);
 	var from = new Complex(line).sub(half);
 	var to = line.add(half);
@@ -170,8 +171,8 @@ Multigrid.prototype.getIntersection = function (lineCoordinates) {
 	var gridA = this.subgrids[lineCoordA[0]].grid;
 	var gridB = this.subgrids[lineCoordB[0]].grid;
 
-	var pointA = this._vectorsIntersection(gridA.getLine(lineCoordA[1]), gridB.initial);
-	var pointB = this._vectorsIntersection(gridB.getLine(lineCoordB[1]), gridA.initial);
+	var pointA = this._vectorsIntersection(gridA.getLine(lineCoordA[1]), gridB.normal);
+	var pointB = this._vectorsIntersection(gridB.getLine(lineCoordB[1]), gridA.normal);
 
 	return pointA.add(pointB);
 };
@@ -191,10 +192,10 @@ Multigrid.prototype._processIntersections = function (callback, subA, subB) {
 	subgridIds = [subgrids.indexOf(subA), subgrids.indexOf(subB)];
 
 	for (i = subA.from; i < subA.to; i++) {
-		pointA = this._vectorsIntersection(subA.grid.getLine(i), subB.grid.initial);
+		pointA = this._vectorsIntersection(subA.grid.getLine(i), subB.grid.normal);
 
 		for (j = subB.from; j < subB.to; j++) {
-			pointB = this._vectorsIntersection(subB.grid.getLine(j), subA.grid.initial);
+			pointB = this._vectorsIntersection(subB.grid.getLine(j), subA.grid.normal);
 
 			callback(pointB.add(pointA), subgridIds);
 		}
@@ -336,7 +337,7 @@ Multigrid.prototype._getNeighbourhood = function (centerCoordinates, isVonNeuman
 
 	// von Neumann neighbourhood
 	_.each(centerCoordinates, (function (lineCoordinate) {
-		var subAngle = this.subgrids[lineCoordinate[0]].grid.initial.arg();
+		var subAngle = this.subgrids[lineCoordinate[0]].grid.normal.arg();
 
 		var pos = {
 			compare: [-1, -1],
