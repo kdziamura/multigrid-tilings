@@ -48,10 +48,12 @@ Grid.prototype.renderLine = function (ctx, lineId) {
 	ctx.lineTo(to.re, to.im);
 };
 
-Grid.prototype.renderLines = function (ctx, from, to) {
+Grid.prototype.renderLines = function (ctx, from, length) {
 	var i;
+	var to;
 
-	to = (typeof to !== 'undefined') ? to : from + 1;
+	length = (typeof length !== 'undefined') ? length : 1;
+	to = from + length;
 
 	ctx.beginPath();
 
@@ -71,11 +73,11 @@ Grid.prototype.subGrid = function (length, from) {
 function SubGrid (grid, from, length) {
 	this.grid = grid;
 	this.from = from;
-	this.to = from + length;
+	this.length = length;
 }
 
 SubGrid.prototype.render = function (ctx) {
-	this.grid.renderLines(ctx, this.from, this.to);
+	this.grid.renderLines(ctx, this.from, this.length);
 };
 
 
@@ -89,7 +91,6 @@ function Multigrid (subgrids, startPoint) {
 
 		_.each(this.subgrids, function (subgrid, i) {
 			subgrid.from += tuple[i];
-			subgrid.to += tuple[i];
 		});
 	}
 }
@@ -106,11 +107,11 @@ Multigrid.byParams = function (params, startPoint) {
 
 Multigrid.prototype.getIntersectionsLength = function () {
 	var linesSum = _.reduce(this.subgrids, function (sum, subgrid) {
-		return sum + subgrid.to - subgrid.from;
+		return sum + subgrid.length;
 	}, 0);
 
 	var result = _.reduce(this.subgrids, function (sum, subgrid) {
-		var lines = subgrid.to - subgrid.from;
+		var lines = subgrid.length;
 		return sum + (linesSum - lines) * lines;
 	}, 0);
 
@@ -173,6 +174,8 @@ Multigrid.prototype._processIntersections = function (callback, subA, subB) {
 	var pointA;
 	var pointB;
 	var subgridIds;
+	var subATo = subA.from + subA.length;
+	var subBTo = subB.from + subB.length;
 
 	if (this._getAngle(subA, subB) % Math.PI === 0) {
 		return;
@@ -180,10 +183,10 @@ Multigrid.prototype._processIntersections = function (callback, subA, subB) {
 
 	subgridIds = [subgrids.indexOf(subA), subgrids.indexOf(subB)];
 
-	for (i = subA.from; i < subA.to; i++) {
+	for (i = subA.from; i < subATo; i++) {
 		pointA = this._vectorsIntersection(subA.grid.getLine(i), subB.grid.normal);
 
-		for (j = subB.from; j < subB.to; j++) {
+		for (j = subB.from; j < subBTo; j++) {
 			pointB = this._vectorsIntersection(subB.grid.getLine(j), subA.grid.normal);
 
 			callback(pointB.add(pointA), subgridIds);
