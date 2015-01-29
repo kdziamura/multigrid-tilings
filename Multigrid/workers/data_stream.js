@@ -1,6 +1,6 @@
-importScripts('Complex.js');
-importScripts('helpers.js');
-importScripts('Multigrid.js');
+importScripts('../libs/Complex.js');
+importScripts('../libs/collections.js');
+importScripts('../Multigrid.js');
 
 var chunk = null;
 

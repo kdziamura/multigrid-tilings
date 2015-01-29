@@ -95,9 +95,9 @@ var controller = {
 
 	start: function () {
 		var zoom = this.zoom;
-		this.polygonsStream = new Worker('data_stream.js');
-		this.intersectionsStream = new Worker('process_intersections.js');
-		this.gameOfLifeStream = new Worker('game_of_life.js');
+		this.polygonsStream = new Worker('Multigrid/workers/data_stream.js');
+		this.intersectionsStream = new Worker('Multigrid/workers/process_intersections.js');
+		this.gameOfLifeStream = new Worker('Multigrid/workers/game_of_life.js');
 
 		if (this.randomAngle) {
 			params.angleStep = Math.random() * 2 * Math.PI;
