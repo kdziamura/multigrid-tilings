@@ -95,22 +95,11 @@ function Multigrid (subgrids, startPoint) {
 }
 
 Multigrid.byParams = function (params, startPoint) {
-	var angleStep = params.angleStep;
-	var shift = params.shift;
-	var gridsNum = params.gridsNum;
-	var linesNum = params.linesNum;
-	var step = params.step;
-
-	var subgrids = new Array(gridsNum);
-	var i;
-	var grid;
-	var angle;
-
-	for (i = 0; i < gridsNum; i++) {
-		angle = angleStep * i;
-		grid = new Grid(angle, shift, typeof step === 'number' ? step : step[i] || 0);
-		subgrids[i] = grid.subGrid(linesNum);
-	}
+	var subgrids = _.map({length: params.gridsNum}, function (val, i) {
+		var angle = params.angleStep * i;
+		var grid = new Grid(angle, params.shift, params.unitInterval);
+		return grid.subGrid(params.linesNum);
+	});
 
 	return new Multigrid(subgrids, startPoint);
 };
