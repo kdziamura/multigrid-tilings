@@ -108,7 +108,7 @@ Multigrid.byParams = function (params, startPoint) {
 
 	for (i = 0; i < gridsNum; i++) {
 		angle = angleStep * i;
-		grid = new Grid(angle, shift, step);
+		grid = new Grid(angle, shift, typeof step === 'number' ? step : step[i] || 0);
 		subgrids[i] = grid.subGrid(linesNum);
 	}
 
