@@ -1,10 +1,8 @@
 (function () {
 
-var zoom = 50;
 var grids = 5;
-var side = 1000;
 var contexts = [];
-var center = new Complex(side/2, side/2);
+var view = null;
 
 var multigrid;
 
@@ -22,14 +20,16 @@ var startPoint = new Complex(0);
 
 var chunks = [];
 function render () {
+	var ctx = view.getContext('tiles');
 	var chunk = chunks.shift();
 	if (chunk) {
-		multigrid.renderTiles(tilesCtx, chunk);
+		multigrid.renderTiles(ctx, chunk);
 	}
 	requestAnimationFrame(render);
 }
 
 function renderIntersections(e) {
+	var gridsCtx = view.getContext('grids');
 
 	requestAnimationFrame(function () {
 		gridsCtx.fillStyle = 'white';
@@ -37,8 +37,7 @@ function renderIntersections(e) {
 		gridsCtx.beginPath();
 
 		_.each(e.data, function(point) {
-			gridsCtx.moveTo(point.re, point.im);
-			gridsCtx.arc(point.re, point.im, 1/controller.zoom, 0, 2 * Math.PI);
+			view.drawPoint(gridsCtx, point);
 		});
 
 		gridsCtx.fill();
@@ -48,8 +47,9 @@ function renderIntersections(e) {
 
 function renderPopulation(e) {
 	var polygons = e.data;
+	var golCtx = view.getContext('gol');
 
-	setupCtx(golCtx);
+	view.clearContext(golCtx);
 	golCtx.fillStyle = 'gold';
 	golCtx.strokeStyle = 'orange';
 
@@ -64,10 +64,6 @@ function renderPopulation(e) {
 
 function stackChunks(e) {
 	chunks.push(e.data);
-}
-
-function getPoint(e) {
-	return new Complex(e.pageX, e.pageY).sub(center).div(controller.zoom);
 }
 
 var controller = {
@@ -89,7 +85,8 @@ var controller = {
 		chunks = [];
 
 		requestAnimationFrame(function() {
-			_.each(contexts, setupCtx);
+			view.setZoom(controller.zoom);
+			view.setupContexts();
 		});
 	},
 
@@ -121,7 +118,7 @@ var controller = {
 		});
 
 		requestAnimationFrame(function() {
-			multigrid._renderGrids(gridsCtx);
+			multigrid._renderGrids(view.getContext('grids'));
 		});
 
 		requestAnimationFrame(render);
@@ -167,7 +164,7 @@ var controller = {
 	isNeumannOnly: false,
 	interval: null,
 
-	zoom: zoom,
+	zoom: 50,
 
 	polygonsStream: null,
 	intersectionsStream: null,
@@ -175,48 +172,15 @@ var controller = {
 };
 
 
-function setupCtx (ctx) {
-	ctx.canvas.width = side;
-	ctx.canvas.height = side;
-	ctx.translate(side/2, side/2);
-	ctx.scale(controller.zoom, controller.zoom);
-	ctx.lineWidth = 1 / controller.zoom;
-
-	ctx.fillStyle = 'white';
-	ctx.strokeStyle = 'white';
-}
-
-
 window.onload = function() {
 	var cache = {};
-
-	var gridsCvs = document.createElement('canvas');
-	var tilesCvs = document.createElement('canvas');
-	var overlayCvs = document.createElement('canvas');
-	var golCvs = document.createElement('canvas');
-
-	gridsCvs.classList.add('grids');
-	tilesCvs.classList.add('tiles');
-	overlayCvs.classList.add('overlay');
-	golCvs.classList.add('gol');
-
-	gridsCtx = gridsCvs.getContext('2d');
-	tilesCtx = tilesCvs.getContext('2d');
-	overlayCtx = overlayCvs.getContext('2d');
-	golCtx = golCvs.getContext('2d');
-
-	contexts = [gridsCtx, tilesCtx, golCtx, overlayCtx];
-
-
-	_.each(contexts, function (ctx) {
-		setupCtx(ctx);
-		document.body.appendChild(ctx.canvas);
-	});
-
-
 	var textLabel = document.querySelector('.label');
-	document.addEventListener('mousemove', function (e) {
-		var point = getPoint(e);
+
+	view = new View(400, 300, controller.zoom);
+	document.body.appendChild(view.el);
+
+	view.el.addEventListener('mousemove', function (e) {
+		var point = view.getPoint(e);
 		var tuple = multigrid.getTuple(point);
 
 		var intersectionTuple;
@@ -255,8 +219,10 @@ window.onload = function() {
 		window.requestAnimationFrame(function () {
 			textLabel.innerHTML = tuple;
 
-			overlayCtx.clearRect(-side/2, -side/2, side, side);
-			overlayCtx.lineWidth = 2 / controller.zoom;
+			var overlayCtx = view.getContext('overlay');
+
+			view.clearContext(overlayCtx);
+			overlayCtx.lineWidth = 2 / view.zoom;
 
 			overlayCtx.fillStyle = 'hsla(0, 100%, 100%, 0.3)';
 			overlayCtx.beginPath();
@@ -267,21 +233,21 @@ window.onload = function() {
 
 			overlayCtx.fillStyle = 'white';
 			overlayCtx.beginPath();
-			overlayCtx.arc(cache.interpolated.re, cache.interpolated.im, 0.2, 0, 2 * Math.PI);
+			view.drawPoint(overlayCtx, cache.interpolated, 10);
 			overlayCtx.fill();
 			overlayCtx.closePath();
 		});
 
 	});
 
-	document.addEventListener('mousedown', function (e) {
-		var point = getPoint(e);
+	view.el.addEventListener('mousedown', function (e) {
+		var point = view.getPoint(e);
 		var cell;
 
 		if (e.ctrlKey) {
 			startPoint = point;
 			controller.update();
-		} else if (e.target === overlayCvs) {
+		} else if (view.getContextName(e.target) === 'overlay') {
 			controller.gameOfLifeStream.postMessage({
 				type: 'toggle',
 				cell: multigrid._getCellCoordinates(cache.coords)
@@ -291,12 +257,12 @@ window.onload = function() {
 
 	document.addEventListener('keydown', function (e) {
 		if (e.keyCode === 16) {
-			tilesCvs.style.opacity = 0;
+			view.getContext('tiles').canvas.style.opacity = 0;
 		}
 	});
 	document.addEventListener('keyup', function (e) {
 		if (e.keyCode === 16) {
-			tilesCvs.style.opacity = 1;
+			view.getContext('tiles').canvas.style.opacity = 1;
 		}
 	});
 
