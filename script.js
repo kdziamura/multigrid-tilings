@@ -220,7 +220,7 @@ window.onload = function() {
 		var tuple = multigrid.getTuple(point);
 
 		var intersectionTuple;
-		var subgridIds;
+		var gridIds;
 		var nearestIntersection;
 
 		if (!_.every(tuple, function (val, key, tuple) {
@@ -249,8 +249,8 @@ window.onload = function() {
 		cache.coords = nearestIntersection[1];
 
 		intersectionTuple = multigrid.getTuple(nearestIntersection[0]);
-		subgridIds = [cache.coords[0][0], cache.coords[1][0]];
-		polygon = multigrid.getPolygon(intersectionTuple, subgridIds);
+		gridIds = [cache.coords[0][0], cache.coords[1][0]];
+		polygon = multigrid.getPolygon(intersectionTuple, gridIds);
 
 		window.requestAnimationFrame(function () {
 			textLabel.innerHTML = tuple;

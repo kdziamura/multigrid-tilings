@@ -4,26 +4,26 @@ importScripts('Multigrid.js');
 
 var chunk = null;
 
-function compare (lastSubgridIds, subgridIds) {
-	return lastSubgridIds[0] === subgridIds[0] && lastSubgridIds[1] === subgridIds[1];
+function compare (lastGridIds, gridIds) {
+	return lastGridIds[0] === gridIds[0] && lastGridIds[1] === gridIds[1];
 }
 
-function sendChunk (polygon, subgridIds) {
+function sendChunk (polygon, gridIds) {
 	if (!chunk) {
 		chunk = {
 			polygons: [],
-			subgridIds: subgridIds
+			gridIds: gridIds
 		};
 	}
 
-	if (compare(chunk.subgridIds, subgridIds)) {
+	if (compare(chunk.gridIds, gridIds)) {
 		chunk.polygons.push(polygon);
 	} else {
 		postMessage(chunk);
 
 		chunk = {
 			polygons: [polygon],
-			subgridIds: subgridIds
+			gridIds: gridIds
 		};
 	}
 

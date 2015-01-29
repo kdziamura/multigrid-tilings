@@ -36,20 +36,20 @@ function randomPopulation (multigrid, maxLength) {
 	var i = 0;
 	var cell = '';
 
-	var gridsLength = multigrid.subgrids.length;
+	var gridsLength = multigrid.grids.length;
 
 	for (; i < maxLength; i++) {
-		subgridId = Math.floor(Math.random() * (gridsLength - 1));
-		subgrid = multigrid.subgrids[subgridId];
-		line = subgrid.from + Math.floor(Math.random() * (subgrid.to - subgrid.from));
+		gridId = Math.floor(Math.random() * (gridsLength - 1));
+		grid = multigrid.grids[gridId];
+		line = grid.from + Math.floor(Math.random() * grid.length);
 
-		cell = subgridId + ',' + line;
+		cell = gridId + ',' + line;
 
-		subgridId = subgridId + 1 + Math.floor(Math.random() * (gridsLength - subgridId - 2));
-		subgrid = multigrid.subgrids[subgridId];
-		line = subgrid.from + Math.floor(Math.random() * (subgrid.to - subgrid.from));
+		gridId = gridId + 1 + Math.floor(Math.random() * (gridsLength - gridId - 2));
+		grid = multigrid.grids[gridId];
+		line = grid.from + Math.floor(Math.random() * grid.length);
 
-		cell += ',' + subgridId + ',' + line;
+		cell += ',' + gridId + ',' + line;
 
 		toggleCell(population, cell);
 	}
@@ -104,9 +104,9 @@ addEventListener('message', function (e) {
 		var coord = multigrid._parseLineCoordinates(cell);
 		var point = multigrid.getIntersection(coord);
 		var tuple = multigrid.getTuple(point);
-		var subgridIds = [coord[0][0], coord[1][0]];
+		var gridIds = [coord[0][0], coord[1][0]];
 
-		return multigrid.getPolygon(tuple, subgridIds);
+		return multigrid.getPolygon(tuple, gridIds);
 	});
 
 	postMessage(polygons);

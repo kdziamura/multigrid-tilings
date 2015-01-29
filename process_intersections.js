@@ -4,7 +4,7 @@ importScripts('Multigrid.js');
 
 var points = [];
 
-function stackPoints (point, subgridIds) {
+function stackPoints (point, gridIds) {
 	points.push(point);
 	if (points.length === 500) {
 		postMessage(points);

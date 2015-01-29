@@ -1,27 +1,35 @@
 /**
- * Creates grid
- * @param {Radian} angle angle of initial vector
- * @param {Number} shift shift the grid
+ * Grid class
+ * @param {Object} params params of grid
+	{
+		angle: {Number},
+		unitInterval: {Number},
+		shift: {Number},
+		length: {Number},
+		from: {Number}
+	}
  */
-function Grid (angle, shiftLength, unitInterval) {
-	unitInterval = unitInterval || 1;
-	shiftLength = shiftLength || 0;
-
-	var vector = Complex.fromPolar(1, angle);
+function Grid (params) {
+	var unitInterval = params.unitInterval || 1;
+	var shift = params.shift || 0;
+	var vector = Complex.fromPolar(1, params.angle);
 
 	this.unitVector = new Complex(vector).mul(unitInterval);
 	this.normal = new Complex(0, 1).mul(vector);
 
-	this.angle = angle;
+	this.angle = params.angle;
 	this.unitInterval = unitInterval;
-	this.shiftLength = shiftLength;
+	this.shift = shift;
+
+	this.length = params.length;
+	this.from = params.from !== undefined ? params.from : -Math.floor(params.length / 2);
 
 }
 
 Grid.OBSERVATION_ERROR = 0.0000001;
 
 Grid.prototype.getLine = function (id) {
-	return Complex.fromPolar(id * this.unitInterval + this.shiftLength, this.angle);
+	return Complex.fromPolar(id * this.unitInterval + this.shift, this.angle);
 };
 
 Grid.prototype.getRibbonId = function (point) {
@@ -34,7 +42,7 @@ Grid.prototype.getRibbonId = function (point) {
 };
 
 Grid.prototype.getСoordinate = function (point) {
-	var line = (this.unitVector.dot(point) / this.unitInterval - this.shiftLength) / this.unitInterval;
+	var line = (this.unitVector.dot(point) / this.unitInterval - this.shift) / this.unitInterval;
 	return line;
 };
 
@@ -48,16 +56,13 @@ Grid.prototype.renderLine = function (ctx, lineId) {
 	ctx.lineTo(to.re, to.im);
 };
 
-Grid.prototype.renderLines = function (ctx, from, length) {
+Grid.prototype.render = function (ctx) {
 	var i;
-	var to;
-
-	length = (typeof length !== 'undefined') ? length : 1;
-	to = from + length;
+	var to = this.from + this.length;
 
 	ctx.beginPath();
 
-	for (i = from; i < to; i++) {
+	for (i = this.from; i < to; i++) {
 		this.renderLine(ctx, i);
 	}
 
@@ -65,53 +70,39 @@ Grid.prototype.renderLines = function (ctx, from, length) {
 	ctx.closePath();
 };
 
-Grid.prototype.subGrid = function (length, from) {
-	from = (from || 0) - Math.floor(length / 2);
-	return new SubGrid(this, from, length);
-};
-
-function SubGrid (grid, from, length) {
-	this.grid = grid;
-	this.from = from;
-	this.length = length;
-}
-
-SubGrid.prototype.render = function (ctx) {
-	this.grid.renderLines(ctx, this.from, this.length);
-};
-
-
-function Multigrid (subgrids, startPoint) {
+function Multigrid (grids, startPoint) {
 	var tuple;
 
-	this.subgrids = subgrids;
+	this.grids = grids;
 
 	if (startPoint) {
 		tuple = this.getTuple(startPoint);
-
-		_.each(this.subgrids, function (subgrid, i) {
-			subgrid.from += tuple[i];
+		_.each(this.grids, function (grid, i) {
+			grid.from += tuple[i];
 		});
 	}
 }
 
 Multigrid.byParams = function (params, startPoint) {
-	var subgrids = _.map({length: params.gridsNum}, function (val, i) {
-		var angle = params.angleStep * i;
-		var grid = new Grid(angle, params.shift, params.unitInterval);
-		return grid.subGrid(params.linesNum);
+	var grids = _.map({length: params.gridsNum}, function (val, i) {
+		return new Grid({
+			angle: params.angleStep * i,
+			unitInterval: params.unitInterval,
+			shift: params.shift,
+			length: params.linesNum
+		});
 	});
 
-	return new Multigrid(subgrids, startPoint);
+	return new Multigrid(grids, startPoint);
 };
 
 Multigrid.prototype.getIntersectionsLength = function () {
-	var linesSum = _.reduce(this.subgrids, function (sum, subgrid) {
-		return sum + subgrid.length;
+	var linesSum = _.reduce(this.grids, function (sum, grid) {
+		return sum + grid.length;
 	}, 0);
 
-	var result = _.reduce(this.subgrids, function (sum, subgrid) {
-		var lines = subgrid.length;
+	var result = _.reduce(this.grids, function (sum, grid) {
+		var lines = grid.length;
 		return sum + (linesSum - lines) * lines;
 	}, 0);
 
@@ -122,18 +113,18 @@ Multigrid.prototype.processIntersections = function (callback) {
 	this.processGrids(this._processIntersections.bind(this, callback));
 };
 
-Multigrid.prototype._processTuple = function (callback, point, subgridIds) {
+Multigrid.prototype._processTuple = function (callback, point, gridIds) {
 	var tuple = this.getTuple(point);
-	callback(tuple, subgridIds);
+	callback(tuple, gridIds);
 };
 
 Multigrid.prototype.processTuples = function (callback) {
 	this.processIntersections(this._processTuple.bind(this, callback));
 };
 
-Multigrid.prototype._processPolygon = function (callback, tuple, subgridIds) {
-	var polygon = this.getPolygon(tuple, subgridIds);
-	callback(polygon, subgridIds);
+Multigrid.prototype._processPolygon = function (callback, tuple, gridIds) {
+	var polygon = this.getPolygon(tuple, gridIds);
+	callback(polygon, gridIds);
 };
 
 
@@ -142,12 +133,12 @@ Multigrid.prototype.processPolygons = function (callback) {
 };
 
 /**
- * Process subgrids intersections by callback with two args
- * @param  {Function} callback args is two subgrids to process
+ * Process grids intersections by callback with two args
+ * @param  {Function} callback args is two grids to process
  * @return {Array}            array with callbacks returns
  */
 Multigrid.prototype.processGrids = function (callback) {
-	_.eachPairs(this.subgrids, callback);
+	_.eachPairs(this.grids, callback);
 };
 
 Multigrid.prototype._vectorsIntersection = function (vectorA, vectorB) {
@@ -158,8 +149,8 @@ Multigrid.prototype.getIntersection = function (lineCoordinates) {
 	var lineCoordA = lineCoordinates[0];
 	var lineCoordB = lineCoordinates[1];
 
-	var gridA = this.subgrids[lineCoordA[0]].grid;
-	var gridB = this.subgrids[lineCoordB[0]].grid;
+	var gridA = this.grids[lineCoordA[0]];
+	var gridB = this.grids[lineCoordB[0]];
 
 	var pointA = this._vectorsIntersection(gridA.getLine(lineCoordA[1]), gridB.normal);
 	var pointB = this._vectorsIntersection(gridB.getLine(lineCoordB[1]), gridA.normal);
@@ -167,29 +158,28 @@ Multigrid.prototype.getIntersection = function (lineCoordinates) {
 	return pointA.add(pointB);
 };
 
-Multigrid.prototype._processIntersections = function (callback, subA, subB) {
-	var subgrids = this.subgrids;
+Multigrid.prototype._processIntersections = function (callback, gridA, gridB) {
 	var i;
 	var j;
 	var pointA;
 	var pointB;
-	var subgridIds;
-	var subATo = subA.from + subA.length;
-	var subBTo = subB.from + subB.length;
+	var gridIds;
+	var gridATo = gridA.from + gridA.length;
+	var gridBTo = gridB.from + gridB.length;
 
-	if (this._getAngle(subA, subB) % Math.PI === 0) {
+	if (this._getAngle(gridA, gridB) % Math.PI === 0) {
 		return;
 	}
 
-	subgridIds = [subgrids.indexOf(subA), subgrids.indexOf(subB)];
+	gridIds = [this.grids.indexOf(gridA), this.grids.indexOf(gridB)];
 
-	for (i = subA.from; i < subATo; i++) {
-		pointA = this._vectorsIntersection(subA.grid.getLine(i), subB.grid.normal);
+	for (i = gridA.from; i < gridATo; i++) {
+		pointA = this._vectorsIntersection(gridA.getLine(i), gridB.normal);
 
-		for (j = subB.from; j < subBTo; j++) {
-			pointB = this._vectorsIntersection(subB.grid.getLine(j), subA.grid.normal);
+		for (j = gridB.from; j < gridBTo; j++) {
+			pointB = this._vectorsIntersection(gridB.getLine(j), gridA.normal);
 
-			callback(pointB.add(pointA), subgridIds);
+			callback(pointB.add(pointA), gridIds);
 		}
 	}
 };
@@ -197,16 +187,16 @@ Multigrid.prototype._processIntersections = function (callback, subA, subB) {
 /**
  * Get borders of point
  * @param  {Object} point      point
- * @param  {Array}  subgridIds array of subgrids of point, unnecesary
- * @return {Array}             array of pairs of subgridIds
+ * @param  {Array}  gridIds    array of grids of point, unnecesary
+ * @return {Array}             array of pairs of gridIds
  */
-Multigrid.prototype.getBorders = function (point, subgridIds) {
+Multigrid.prototype.getBorders = function (point, gridIds) {
 	var tuple = this.getTuple(point);
 
-	var borders = _.map(tuple, function (ribbonId, subgridId, tuple) {
+	var borders = _.map(tuple, function (ribbonId, gridId, tuple) {
 		var border = new Array(2);
 
-		if (subgridIds && _.contains(subgridIds, subgridId)) {
+		if (gridIds && _.contains(gridIds, gridId)) {
 			border = [ribbonId - 1, ribbonId + 1];
 		} else {
 			border = [ribbonId - 1, ribbonId];
@@ -251,9 +241,9 @@ Multigrid.prototype._getCellCoordinates = function (lineCoordinates) {
 ////////////////////////////////
 
 
-Multigrid.prototype._getVerticeNeigbourhood = function (point, subgridIds) {
+Multigrid.prototype._getVerticeNeigbourhood = function (point, gridIds) {
 	var intersections = [];
-	var borders = this.getBorders(point, subgridIds);
+	var borders = this.getBorders(point, gridIds);
 	var getIntersection = this.getIntersection.bind(this);
 
 	_.each(borders[0], function (lineIdA) {
@@ -265,8 +255,8 @@ Multigrid.prototype._getVerticeNeigbourhood = function (point, subgridIds) {
 		});
 	});
 
-	_.each(borders, (function (border, subgridId) {
-		if (subgridId < 2) {
+	_.each(borders, (function (border, gridId) {
+		if (gridId < 2) {
 			return;
 		}
 
@@ -274,7 +264,7 @@ Multigrid.prototype._getVerticeNeigbourhood = function (point, subgridIds) {
 		var currentStorage;
 		var linesToIntersect = [[], []];
 
-		var axis = this.subgrids[subgridId].grid;
+		var axis = this.grids[gridId];
 
 		_.each(intersections, function (intersection) {
 			var posOnAxis = axis.getСoordinate(intersection[0]);
@@ -299,7 +289,7 @@ Multigrid.prototype._getVerticeNeigbourhood = function (point, subgridIds) {
 		});
 
 		_.each(linesToIntersect, function (storage, borderId) {
-			var coordA = [subgridId, border[borderId]];
+			var coordA = [gridId, border[borderId]];
 			_.each(storage, function (coordB) {
 				var lineCoordinates = [coordA, coordB];
 				newIntersections.push([getIntersection(lineCoordinates), lineCoordinates]);
@@ -329,7 +319,7 @@ Multigrid.prototype._getNeighbourhood = function (centerCoordinates, isVonNeuman
 
 	// von Neumann neighbourhood
 	_.each(centerCoordinates, (function (lineCoordinate) {
-		var subAngle = this.subgrids[lineCoordinate[0]].grid.normal.arg();
+		var subAngle = this.grids[lineCoordinate[0]].normal.arg();
 
 		var pos = {
 			compare: [-1, -1],
@@ -377,14 +367,14 @@ Multigrid.prototype._getNeighbourhood = function (centerCoordinates, isVonNeuman
 	return isVonNeumannOnly ? vonNeumannNeighbourhood : intersections.concat(vonNeumannNeighbourhood);
 };
 
-Multigrid.prototype.getPolygon = function (tuple, subgridIds) {
+Multigrid.prototype.getPolygon = function (tuple, gridIds) {
 	var i;
 	var polygon;
 	var tuples;
 	var gridId;
 	var changes;
 
-	changes = 2 * subgridIds.length - 2;
+	changes = 2 * gridIds.length - 2;
 
 	tuples = new Array(changes + 1);
 	polygon = new Array(changes + 2);
@@ -392,7 +382,7 @@ Multigrid.prototype.getPolygon = function (tuple, subgridIds) {
 	tuples[0] = _.clone(tuple);
 
 	for (i = 0; i < changes; i++) {
-		gridId = subgridIds[i];
+		gridId = gridIds[i];
 
 		tuples[i][gridId] += 1;
 		tuples[i + 1] = _.clone(tuple);
@@ -410,8 +400,8 @@ Multigrid.prototype.getPolygon = function (tuple, subgridIds) {
 Multigrid.prototype.getTuple = function (point) {
 	var tuple;
 
-	tuple = _.map(this.subgrids, function (subgrid, i) {
-		return subgrid.grid.getRibbonId(point);
+	tuple = _.map(this.grids, function (grid, i) {
+		return grid.getRibbonId(point);
 	});
 
 	return tuple;
@@ -421,8 +411,8 @@ Multigrid.prototype.getTuple = function (point) {
 Multigrid.prototype.getCoordinates = function (point) {
 	var tuple;
 
-	tuple = _.map(this.subgrids, function (subgrid, i) {
-		return subgrid.grid.getСoordinate(point);
+	tuple = _.map(this.grids, function (grid, i) {
+		return grid.getСoordinate(point);
 	});
 
 	return tuple;
@@ -432,23 +422,23 @@ Multigrid.prototype.getCoordinates = function (point) {
 Multigrid.prototype.getVertice = function (tuple) {
 	var vertice = new Complex(0);
 
-	_.each(this.subgrids, function (subgrid, i) {
-		vertice.add(Complex.fromPolar(tuple[i], subgrid.grid.angle));
+	_.each(this.grids, function (grid, i) {
+		vertice.add(Complex.fromPolar(tuple[i], grid.angle));
 	});
 
 	return vertice;
 };
 
-Multigrid.prototype._getAngle = function (subA, subB) {
-	var angle = subA.grid.angle - subB.grid.angle;
+Multigrid.prototype._getAngle = function (gridA, gridB) {
+	var angle = gridA.angle - gridB.angle;
 	var fullCircle = 2 * Math.PI;
 
 	angle = (angle + fullCircle) % fullCircle;
 	return Math.min(angle, fullCircle - angle);
 };
 
-Multigrid.prototype._addTyleType = function (subIdA, subIdB) {
-	var angle = this._getAngle(this.subgrids[subIdA], this.subgrids[subIdB]);
+Multigrid.prototype._addTyleType = function (gridAId, gridBId) {
+	var angle = this._getAngle(this.grids[gridAId], this.grids[gridBId]);
 	var uniqueness = angle * 1000 | 0;
 	var id = this.tileTypes.indexOf(uniqueness);
 
@@ -459,8 +449,8 @@ Multigrid.prototype._addTyleType = function (subIdA, subIdB) {
 	}
 };
 
-Multigrid.prototype._getTileType = function (subA, subB) {
-	var uniqueness = this._getAngle(subA, subB) * 1000 | 0;
+Multigrid.prototype._getTileType = function (gridA, gridB) {
+	var uniqueness = this._getAngle(gridA, gridB) * 1000 | 0;
 	var id = this.tileTypes.indexOf(uniqueness);
 
 	return id === -1 ? null : id;
@@ -499,20 +489,19 @@ Multigrid.prototype._preRenderTile = function (id, angle) {
 };
 
 Multigrid.prototype._renderGrids = function (ctx) {
-	var subgridsLength = this.subgrids.length;
-	var colorStep = 360 / subgridsLength;
+	var colorStep = 360 / this.grids.length;
 
 	ctx.save();
 
-	_.each(this.subgrids, function (subgrid, i) {
+	_.each(this.grids, function (grid, i) {
 		ctx.strokeStyle = 'hsl(' + i * colorStep + ', 80%, 30%)';
-		subgrid.render(ctx);
+		grid.render(ctx);
 	});
 
 	ctx.restore();
 };
 
-Multigrid.prototype.renderPolygon = function (ctx, subgridIds, polygon) {
+Multigrid.prototype.renderPolygon = function (ctx, gridIds, polygon) {
 	_.each(polygon, function path (vertice, i) {
 		if (i === 0) {
 			ctx.moveTo(vertice.re, vertice.im);
@@ -525,11 +514,11 @@ Multigrid.prototype.renderPolygon = function (ctx, subgridIds, polygon) {
 };
 
 Multigrid.prototype.renderTiles = function (ctx, chunk) {
-	var subgridIds = chunk.subgridIds;
-	var hue = this._getAngle(this.subgrids[subgridIds[0]], this.subgrids[subgridIds[1]]) / Math.PI * 180 * 4;
+	var gridIds = chunk.gridIds;
+	var hue = this._getAngle(this.grids[gridIds[0]], this.grids[gridIds[1]]) / Math.PI * 180 * 4;
 
 	ctx.beginPath();
-	_.each(chunk.polygons, this.renderPolygon.bind(this, ctx, subgridIds));
+	_.each(chunk.polygons, this.renderPolygon.bind(this, ctx, gridIds));
 
 	ctx.fillStyle = 'hsl(' + hue + ', 55%, 55%)';
 	ctx.fill();
