@@ -125,7 +125,7 @@ Multigrid.prototype._processTuple = function (callback, point, gridIds) {
 		});
 
 		if (isOverflow) {
-			return
+			return;
 		}
 	}
 
@@ -538,21 +538,3 @@ Multigrid.prototype.renderTiles = function (ctx, chunk) {
 	ctx.fill();
 	ctx.closePath();
 };
-
-
-// function Renderer(params) {
-// 	this.zoom = params.zoom;
-// 	this.size = params.size;
-// 	this.sides = params.sides;
-// 	this.multigrid = params.multigrid;
-
-
-// 	this.cvs = {};
-// 	this.createCvs('grids');
-// 	this.createCvs('tiles');
-// 	this.createCvs('overlay');
-// }
-
-// Renderer.prototype.createCvs = function (storage) {
-
-// }
