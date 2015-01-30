@@ -238,7 +238,7 @@ window.onload = function() {
 
 			overlayCtx.fillStyle = 'white';
 			overlayCtx.beginPath();
-			view.drawPoint(overlayCtx, cache.interpolated, 10);
+			view.drawPoint(overlayCtx, cache.interpolated, 0.2 * view.zoom);
 			overlayCtx.fill();
 			overlayCtx.closePath();
 		});
