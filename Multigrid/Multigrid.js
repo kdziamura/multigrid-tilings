@@ -19,7 +19,7 @@ function Grid (params) {
 
 	this.angle = params.angle;
 	this.unitInterval = unitInterval;
-	this.shift = shift;
+	this.shift = shift * unitInterval;
 
 	this.length = params.length;
 	this.from = params.from !== undefined ? params.from : -Math.floor(params.length / 2);
