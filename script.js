@@ -9,9 +9,9 @@ var multigrid;
 var params = {
 	angleStep: (1 + grids % 2) * Math.PI / grids,
 	shift: 1 / grids,
-	unitInterval: 1,
+	unitInterval: 1, //_.map({length: 10}, function() {return Math.random() * 3;}),
 	gridsNum: grids,
-	linesNum: 5
+	linesNum: 30
 };
 
 var startPoint = new Complex(0);
