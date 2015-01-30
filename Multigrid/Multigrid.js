@@ -12,10 +12,10 @@
 function Grid (params) {
 	var unitInterval = params.unitInterval || 1;
 	var shift = params.shift || 0;
-	var vector = Complex.fromPolar(1, params.angle);
+	this.vector = Complex.fromPolar(1, params.angle);
 
-	this.unitVector = new Complex(vector).mul(unitInterval);
-	this.normal = new Complex(0, 1).mul(vector);
+	this.unitVector = new Complex(this.vector).mul(unitInterval);
+	this.normal = new Complex(0, 1).mul(this.vector);
 
 	this.angle = params.angle;
 	this.unitInterval = unitInterval;
@@ -29,7 +29,11 @@ function Grid (params) {
 Grid.OBSERVATION_ERROR = 0.0000001;
 
 Grid.prototype.getLine = function (id) {
-	return Complex.fromPolar(id * this.unitInterval + this.shift, this.angle);
+	return this.getVector(id * this.unitInterval + this.shift);
+};
+
+Grid.prototype.getVector = function (length) {
+	return new Complex(this.vector).mul(length);
 };
 
 Grid.prototype.getRibbonId = function (point) {
@@ -385,32 +389,17 @@ Multigrid.prototype._getNeighbourhood = function (centerCoordinates, isVonNeuman
 };
 
 Multigrid.prototype.getPolygon = function (tuple, gridIds) {
-	var i;
-	var polygon;
-	var tuples;
-	var gridId;
-	var changes;
+	var vertices = new Array(2 * gridIds.length);
 
-	changes = 2 * gridIds.length - 2;
+	var a = this.grids[gridIds[0]].vector;
+	var b = this.grids[gridIds[1]].vector;
 
-	tuples = new Array(changes + 1);
-	polygon = new Array(changes + 2);
+	vertices[0] = this.getVertice(tuple);
+	vertices[1] = new Complex(vertices[0]).add(a);
+	vertices[2] = new Complex(vertices[1]).add(b);
+	vertices[3] = new Complex(vertices[0]).add(b);
 
-	tuples[0] = _.clone(tuple);
-
-	for (i = 0; i < changes; i++) {
-		gridId = gridIds[i];
-
-		tuples[i][gridId] += 1;
-		tuples[i + 1] = _.clone(tuple);
-		tuples[i + 1][gridId] += 1;
-
-		polygon[i] = this.getVertice(tuples[i]);
-	}
-	polygon[changes] = this.getVertice(tuples[changes]);
-	polygon[changes + 1] = this.getVertice(tuple);
-
-	return polygon;
+	return vertices;
 };
 
 
@@ -440,7 +429,7 @@ Multigrid.prototype.getVertice = function (tuple) {
 	var vertice = new Complex(0);
 
 	_.each(this.grids, function (grid, i) {
-		vertice.add(Complex.fromPolar(tuple[i], grid.angle));
+		vertice.add(grid.getVector(tuple[i]));
 	});
 
 	return vertice;
