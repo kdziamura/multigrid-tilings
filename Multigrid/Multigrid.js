@@ -181,7 +181,7 @@ Multigrid.prototype._processIntersections = function (callback, gridA, gridB) {
 	var gridATo = gridA.from + gridA.length;
 	var gridBTo = gridB.from + gridB.length;
 
-	if (this._getAngle(gridA, gridB) % Math.PI === 0) {
+	if (Math.sin(this._getAngle(gridA, gridB)) === 0) {
 		return;
 	}
 
