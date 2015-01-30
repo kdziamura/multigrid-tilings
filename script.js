@@ -11,7 +11,7 @@ var params = {
 	shift: 1 / grids,
 	unitInterval: 1, //_.map({length: 10}, function() {return Math.random() * 3;}),
 	gridsNum: grids,
-	linesNum: 30
+	linesNum: 10
 };
 
 var startPoint = new Complex(0);
@@ -142,7 +142,7 @@ var controller = {
 	golRandom: function () {
 		this.gameOfLifeStream.postMessage({
 			type: 'randomize',
-			maxLength: 200
+			chance: 0.2
 		});
 	},
 

@@ -197,6 +197,31 @@ Multigrid.prototype._processIntersections = function (callback, grids, gridIds) 
 	}
 };
 
+Multigrid.prototype.processIntersectionCoords = function (callback) {
+	this.processGrids(function (callback, grids, gridIds) {
+		var i;
+		var j;
+		var coordA;
+		var coordB;
+		var gridA = grids[0];
+		var gridB = grids[1];
+		var gridATo = gridA.from + gridA.length;
+		var gridBTo = gridB.from + gridB.length;
+
+		if (Math.sin(this._getAngle(gridA, gridB)) === 0) {
+			return;
+		}
+
+		for (i = gridA.from; i < gridATo; i++) {
+			coordA = [gridIds[0], i];
+			for (j = gridB.from; j < gridBTo; j++) {
+				coordB = [gridIds[1], j];
+				callback([coordA, coordB]);
+			}
+		}
+	}.bind(this, callback));
+};
+
 /**
  * Get borders of point
  * @param  {Object} point      point

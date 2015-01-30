@@ -31,28 +31,19 @@ function getNewPopulation (multigrid, toSurvive, toBirth, population) {
 	return newPopulation;
 }
 
-function randomPopulation (multigrid, maxLength) {
+function randomPopulation (multigrid, chance) {
 	var population = [];
-	var i = 0;
-	var cell = '';
 
-	var gridsLength = multigrid.grids.length;
+	multigrid.processIntersectionCoords(function (coordinates) {
+		var cell;
 
-	for (; i < maxLength; i++) {
-		gridId = Math.floor(Math.random() * (gridsLength - 1));
-		grid = multigrid.grids[gridId];
-		line = grid.from + Math.floor(Math.random() * grid.length);
+		if (Math.random() > chance) {
+			return;
+		}
 
-		cell = gridId + ',' + line;
-
-		gridId = gridId + 1 + Math.floor(Math.random() * (gridsLength - gridId - 2));
-		grid = multigrid.grids[gridId];
-		line = grid.from + Math.floor(Math.random() * grid.length);
-
-		cell += ',' + gridId + ',' + line;
-
-		toggleCell(population, cell);
-	}
+		cell = multigrid._getCellCoordinates(coordinates);
+		population.push(cell);
+	});
 
 	return population;
 }
@@ -97,7 +88,7 @@ addEventListener('message', function (e) {
 	} else if (data.type === 'toggle') {
 		toggleCell(population, data.cell);
 	} else if (data.type === 'randomize') {
-		population = randomPopulation(multigrid, data.maxLength);
+		population = randomPopulation(multigrid, data.chance);
 	}
 
 	var polygons = _.map(population, function (cell) {
