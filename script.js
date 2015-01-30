@@ -142,7 +142,7 @@ var controller = {
 	golRandom: function () {
 		this.gameOfLifeStream.postMessage({
 			type: 'randomize',
-			chance: 0.2
+			chance: this.coverage
 		});
 	},
 
@@ -166,6 +166,8 @@ var controller = {
 
 	zoom: 10,
 	isOverflow: false,
+
+	coverage: 0.2,
 
 	polygonsStream: null,
 	intersectionsStream: null,
@@ -284,6 +286,7 @@ window.onload = function() {
 
 	f2.add(controller, 'toBirth');
 	f2.add(controller, 'toSurvive');
+	f2.add(controller, 'coverage').min(0).max(1);
 	f2.add(controller, 'golRandom');
 	f2.add(controller, 'golStep');
 	var runGol = f2.add(controller, 'golRun');
