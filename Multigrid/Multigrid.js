@@ -70,10 +70,11 @@ Grid.prototype.render = function (ctx) {
 	ctx.closePath();
 };
 
-function Multigrid (grids, startPoint) {
+function Multigrid (grids, startPoint, isOverflow) {
 	var tuple;
 
 	this.grids = grids;
+	this.isOverflow = !!isOverflow;
 
 	if (startPoint) {
 		tuple = this.getTuple(startPoint);
@@ -83,17 +84,17 @@ function Multigrid (grids, startPoint) {
 	}
 }
 
-Multigrid.byParams = function (params, startPoint) {
+Multigrid.byParams = function (params, startPoint, isOverflow) {
 	var grids = _.map({length: params.gridsNum}, function (val, i) {
 		return new Grid({
 			angle: params.angleStep * i,
-			unitInterval: params.unitInterval,
+			unitInterval: typeof params.unitInterval === 'number' ? params.unitInterval : params.unitInterval[i] || 1,
 			shift: params.shift,
 			length: params.linesNum
 		});
 	});
 
-	return new Multigrid(grids, startPoint);
+	return new Multigrid(grids, startPoint, isOverflow);
 };
 
 Multigrid.prototype.getIntersectionsLength = function () {
@@ -115,6 +116,19 @@ Multigrid.prototype.processIntersections = function (callback) {
 
 Multigrid.prototype._processTuple = function (callback, point, gridIds) {
 	var tuple = this.getTuple(point);
+	var grids = this.grids;
+
+	if (!this.isOverflow) {
+		isOverflow = !_.every(tuple, function (ribbonId, gridId) {
+			var x = ribbonId - grids[gridId].from;
+			return x >= 0 && x <= grids[gridId].length;
+		});
+
+		if (isOverflow) {
+			return
+		}
+	}
+
 	callback(tuple, gridIds);
 };
 

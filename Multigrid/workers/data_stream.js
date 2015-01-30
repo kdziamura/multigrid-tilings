@@ -32,7 +32,7 @@ function sendChunk (polygon, gridIds) {
 
 addEventListener('message', function(e) {
 	var data = e.data;
-	var multigrid = Multigrid.byParams(data[0], data[1]);
+	var multigrid = Multigrid.byParams(data[0], data[1], data[2]);
 
 	multigrid.processPolygons(sendChunk);
 	postMessage(chunk);

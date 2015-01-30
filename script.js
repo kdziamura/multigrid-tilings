@@ -100,10 +100,10 @@ var controller = {
 			params.angleStep = Math.random() * 2 * Math.PI;
 		}
 
-		multigrid = Multigrid.byParams(params, startPoint);
+		multigrid = Multigrid.byParams(params, startPoint, this.isOverflow);
 
 		this.polygonsStream.addEventListener('message', stackChunks, false);
-		this.polygonsStream.postMessage([params, startPoint]);
+		this.polygonsStream.postMessage([params, startPoint, this.isOverflow]);
 
 		this.intersectionsStream.addEventListener('message', renderIntersections, false);
 		this.intersectionsStream.postMessage([params, startPoint]);
@@ -164,7 +164,8 @@ var controller = {
 	isNeumannOnly: false,
 	interval: null,
 
-	zoom: 50,
+	zoom: 10,
+	isOverflow: false,
 
 	polygonsStream: null,
 	intersectionsStream: null,
@@ -275,10 +276,11 @@ window.onload = function() {
 	f1.add(params, 'angleStep').listen();
 	f1.add(controller, 'autoAngle');
 	f1.add(controller, 'randomAngle').listen();
-	f1.add(controller, 'zoom', 0);
 	f1.add(params, 'shift', 0, 1);
 	f1.add(params, 'gridsNum').min(2).step(1);
 	f1.add(params, 'linesNum').min(1).step(1);
+	f1.add(controller, 'zoom', 1);
+	f1.add(controller, 'isOverflow');
 
 	f2.add(controller, 'toBirth');
 	f2.add(controller, 'toSurvive');
