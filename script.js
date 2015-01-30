@@ -177,7 +177,7 @@ window.onload = function() {
 	var cache = {};
 	var textLabel = document.querySelector('.label');
 
-	view = new View(400, 300, controller.zoom);
+	view = new View(window.innerWidth, window.innerHeight, controller.zoom);
 	document.body.appendChild(view.el);
 
 	view.el.addEventListener('mousemove', function (e) {
