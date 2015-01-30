@@ -42,7 +42,7 @@ _.eachPairs = function (array, callback) {
 
 	for (i = 0; i < length - 1; i++) {
 		for (j = i + 1; j < length; j++) {
-			callback(array[i], array[j]);
+			callback([array[i], array[j]], [i, j]);
 		}
 	}
 };

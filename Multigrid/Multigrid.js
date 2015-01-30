@@ -172,20 +172,19 @@ Multigrid.prototype.getIntersection = function (lineCoordinates) {
 	return pointA.add(pointB);
 };
 
-Multigrid.prototype._processIntersections = function (callback, gridA, gridB) {
+Multigrid.prototype._processIntersections = function (callback, grids, gridIds) {
 	var i;
 	var j;
 	var pointA;
 	var pointB;
-	var gridIds;
+	var gridA = grids[0];
+	var gridB = grids[1];
 	var gridATo = gridA.from + gridA.length;
 	var gridBTo = gridB.from + gridB.length;
 
 	if (Math.sin(this._getAngle(gridA, gridB)) === 0) {
 		return;
 	}
-
-	gridIds = [this.grids.indexOf(gridA), this.grids.indexOf(gridB)];
 
 	for (i = gridA.from; i < gridATo; i++) {
 		pointA = this._vectorsIntersection(gridA.getLine(i), gridB.normal);
@@ -451,8 +450,8 @@ Multigrid.prototype._getAngle = function (gridA, gridB) {
 	return Math.min(angle, fullCircle - angle);
 };
 
-Multigrid.prototype._addTyleType = function (gridAId, gridBId) {
-	var angle = this._getAngle(this.grids[gridAId], this.grids[gridBId]);
+Multigrid.prototype._addTyleType = function (grids, gridIds) {
+	var angle = this._getAngle(grids[0], grids[1]);
 	var uniqueness = angle * 1000 | 0;
 	var id = this.tileTypes.indexOf(uniqueness);
 
