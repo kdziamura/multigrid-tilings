@@ -70,11 +70,11 @@ Grid.prototype.render = function (ctx) {
 	ctx.closePath();
 };
 
-function Multigrid (grids, startPoint, isOverflow) {
+function Multigrid (grids, startPoint, isSkipOverflow) {
 	var tuple;
 
 	this.grids = grids;
-	this.isOverflow = !!isOverflow;
+	this.isSkipOverflow = !!isSkipOverflow;
 
 	if (startPoint) {
 		tuple = this.getTuple(startPoint);
@@ -84,7 +84,7 @@ function Multigrid (grids, startPoint, isOverflow) {
 	}
 }
 
-Multigrid.byParams = function (params, startPoint, isOverflow) {
+Multigrid.byParams = function (params, startPoint, isSkipOverflow) {
 	var grids = _.map({length: params.gridsNum}, function (val, i) {
 		return new Grid({
 			angle: params.angleStep * i,
@@ -94,7 +94,7 @@ Multigrid.byParams = function (params, startPoint, isOverflow) {
 		});
 	});
 
-	return new Multigrid(grids, startPoint, isOverflow);
+	return new Multigrid(grids, startPoint, isSkipOverflow);
 };
 
 Multigrid.prototype.getIntersectionsLength = function () {
@@ -116,19 +116,6 @@ Multigrid.prototype.processIntersections = function (callback) {
 
 Multigrid.prototype._processTuple = function (callback, point, gridIds) {
 	var tuple = this.getTuple(point);
-	var grids = this.grids;
-
-	if (!this.isOverflow) {
-		isOverflow = !_.every(tuple, function (ribbonId, gridId) {
-			var x = ribbonId - grids[gridId].from;
-			return x >= 0 && x <= grids[gridId].length;
-		});
-
-		if (isOverflow) {
-			return;
-		}
-	}
-
 	callback(tuple, gridIds);
 };
 
@@ -172,11 +159,24 @@ Multigrid.prototype.getIntersection = function (lineCoordinates) {
 	return pointA.add(pointB);
 };
 
+Multigrid.prototype.isOverflow = function (point) {
+	var grids = this.grids;
+	var tuple = this.getTuple(point);
+
+	var isOverflow = !_.every(tuple, function (ribbonId, gridId) {
+		var x = ribbonId - grids[gridId].from;
+		return x >= 0 && x <= grids[gridId].length;
+	});
+
+	return isOverflow;
+};
+
 Multigrid.prototype._processIntersections = function (callback, grids, gridIds) {
 	var i;
 	var j;
 	var pointA;
 	var pointB;
+	var point;
 	var gridA = grids[0];
 	var gridB = grids[1];
 	var gridATo = gridA.from + gridA.length;
@@ -192,34 +192,13 @@ Multigrid.prototype._processIntersections = function (callback, grids, gridIds) 
 		for (j = gridB.from; j < gridBTo; j++) {
 			pointB = this._vectorsIntersection(gridB.getLine(j), gridA.normal);
 
-			callback(pointB.add(pointA), gridIds);
+			point = new Complex(pointB).add(pointA);
+			if (this.isSkipOverflow && this.isOverflow(point)) {
+				continue;
+			}
+			callback(point, gridIds);
 		}
 	}
-};
-
-Multigrid.prototype.processIntersectionCoords = function (callback) {
-	this.processGrids(function (callback, grids, gridIds) {
-		var i;
-		var j;
-		var coordA;
-		var coordB;
-		var gridA = grids[0];
-		var gridB = grids[1];
-		var gridATo = gridA.from + gridA.length;
-		var gridBTo = gridB.from + gridB.length;
-
-		if (Math.sin(this._getAngle(gridA, gridB)) === 0) {
-			return;
-		}
-
-		for (i = gridA.from; i < gridATo; i++) {
-			coordA = [gridIds[0], i];
-			for (j = gridB.from; j < gridBTo; j++) {
-				coordB = [gridIds[1], j];
-				callback([coordA, coordB]);
-			}
-		}
-	}.bind(this, callback));
 };
 
 /**

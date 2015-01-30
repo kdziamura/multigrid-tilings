@@ -100,18 +100,20 @@ var controller = {
 			params.angleStep = Math.random() * 2 * Math.PI;
 		}
 
-		multigrid = Multigrid.byParams(params, startPoint, this.isOverflow);
+		multigrid = Multigrid.byParams(params, startPoint, this.isSkipOverflow);
 
 		this.polygonsStream.addEventListener('message', stackChunks, false);
-		this.polygonsStream.postMessage([params, startPoint, this.isOverflow]);
+		this.polygonsStream.postMessage([params, startPoint, this.isSkipOverflow]);
 
 		this.intersectionsStream.addEventListener('message', renderIntersections, false);
-		this.intersectionsStream.postMessage([params, startPoint]);
+		this.intersectionsStream.postMessage([params, startPoint, this.isSkipOverflow]);
 
 		this.gameOfLifeStream.addEventListener('message', renderPopulation, false);
 		this.gameOfLifeStream.postMessage({
 			type: 'init',
 			params: params,
+			startPoint: startPoint,
+			isSkipOverflow: this.isSkipOverflow,
 			toBirth: this.toBirth,
 			toSurvive: this.toSurvive,
 			isNeumannOnly: this.isNeumannOnly
@@ -165,7 +167,7 @@ var controller = {
 	interval: null,
 
 	zoom: 10,
-	isOverflow: false,
+	isSkipOverflow: false,
 
 	coverage: 0.2,
 
@@ -282,7 +284,7 @@ window.onload = function() {
 	f1.add(params, 'gridsNum').min(2).step(1);
 	f1.add(params, 'linesNum').min(1).step(1);
 	f1.add(controller, 'zoom', 1);
-	f1.add(controller, 'isOverflow');
+	f1.add(controller, 'isSkipOverflow');
 
 	f2.add(controller, 'toBirth');
 	f2.add(controller, 'toSurvive');

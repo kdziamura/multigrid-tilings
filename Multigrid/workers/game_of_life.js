@@ -34,12 +34,15 @@ function getNewPopulation (multigrid, toSurvive, toBirth, population) {
 function randomPopulation (multigrid, chance) {
 	var population = [];
 
-	multigrid.processIntersectionCoords(function (coordinates) {
+	multigrid.processTuples(function (tuple, gridIds) {
 		var cell;
+		var coordinates;
 
 		if (Math.random() > chance) {
 			return;
 		}
+
+		coordinates = [[gridIds[0], tuple[gridIds[0]]], [gridIds[1], tuple[gridIds[1]]]];
 
 		cell = multigrid._getCellCoordinates(coordinates);
 		population.push(cell);
@@ -79,7 +82,7 @@ addEventListener('message', function (e) {
 	var data = e.data;
 
 	if (data.type === 'init') {
-		multigrid = Multigrid.byParams(data.params);
+		multigrid = Multigrid.byParams(data.params, data.startPoint, data.isSkipOverflow);
 		parseRule(data.toBirth, data.toSurvive);
 		isNeumannOnly = data.isNeumannOnly;
 		population = [];
