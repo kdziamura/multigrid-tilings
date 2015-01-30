@@ -17,8 +17,12 @@ addEventListener('message', function(e) {
 	var data = e.data;
 	var multigrid = Multigrid.byParams(data[0], data[1], data[2]);
 
+	console.time('Intersections generation');
+
 	multigrid.processIntersections(stackPoints);
 	postMessage(points);
-	close();
 
+	console.timeEnd('Intersections generation');
+
+	close();
 }, false);

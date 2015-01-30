@@ -34,8 +34,11 @@ addEventListener('message', function(e) {
 	var data = e.data;
 	var multigrid = Multigrid.byParams(data[0], data[1], data[2]);
 
+	console.time('Polygons generation');
+
 	multigrid.processPolygons(sendChunk);
 	postMessage(chunk);
-	close();
 
+	console.timeEnd('Polygons generation');
+	close();
 }, false);
