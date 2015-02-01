@@ -4,7 +4,7 @@ function View (w, h, zoom) {
 	zoom = zoom || 100;
 
 	this.setSize(w, h);
-	this.setCenter(w/2, h/2);
+	this.center = new Complex(w/2, h/2);
 	this.setZoom(zoom);
 
 	this.defineContexts();
@@ -17,10 +17,6 @@ View.CONTEXTS = ['grids', 'tiles', 'gol', 'overlay'];
 
 View.prototype.setSize = function (w, h) {
 	this.size = new Complex(w, h);
-};
-
-View.prototype.setCenter = function (x, y) {
-	this.center = new Complex(x, y);
 };
 
 View.prototype.setZoom = function (zoom) {
