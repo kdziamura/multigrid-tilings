@@ -32,6 +32,15 @@ Grid.prototype.getLine = function (id) {
 	return this.getVector(id * this.unitInterval + this.shift);
 };
 
+/**
+ * Get intersection of normal of grid and passed line
+ * @param  {Object}
+ * @return {Object}
+ */
+Grid.prototype.getIntersetionWithNormal = function (line) {
+	return line.is(0) ? new Complex(0) : new Complex(this.normal).mul(Math.pow(line.abs(), 2) / this.normal.dot(line));
+};
+
 Grid.prototype.getVector = function (length) {
 	return new Complex(this.vector).mul(length);
 };
@@ -146,19 +155,15 @@ Multigrid.prototype.processGrids = function (callback) {
 	_.eachPairs(this.grids, callback);
 };
 
-Multigrid.prototype._vectorsIntersection = function (vectorA, vectorB) {
-	return vectorA.is(0) ? new Complex(0) : new Complex(vectorB).mul(Math.pow(vectorA.abs(), 2) / vectorB.dot(vectorA));
-};
-
 Multigrid.prototype.getIntersection = function (lineCoordinates) {
 	var lineCoordA = lineCoordinates[0];
 	var lineCoordB = lineCoordinates[1];
 
-	var gridA = this.grids[lineCoordA[0]];
+	var gridA = this.grids[lineCoordA[0]]
 	var gridB = this.grids[lineCoordB[0]];
 
-	var pointA = this._vectorsIntersection(gridA.getLine(lineCoordA[1]), gridB.normal);
-	var pointB = this._vectorsIntersection(gridB.getLine(lineCoordB[1]), gridA.normal);
+	var pointA = gridA.getIntersetionWithNormal(gridB.getLine(lineCoordB[1]));
+	var pointB = gridB.getIntersetionWithNormal(gridA.getLine(lineCoordA[1]));
 
 	return pointA.add(pointB);
 };
@@ -191,10 +196,10 @@ Multigrid.prototype._processIntersections = function (callback, grids, gridIds) 
 	}
 
 	for (i = gridA.from; i < gridATo; i++) {
-		pointA = this._vectorsIntersection(gridA.getLine(i), gridB.normal);
+		pointA = gridB.getIntersetionWithNormal(gridA.getLine(i));
 
 		for (j = gridB.from; j < gridBTo; j++) {
-			pointB = this._vectorsIntersection(gridB.getLine(j), gridA.normal);
+			pointB = gridA.getIntersetionWithNormal(gridB.getLine(j));
 
 			point = new Complex(pointB).add(pointA);
 			if (this.isSkipOverflow && this.isOverflow(point)) {
