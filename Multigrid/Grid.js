@@ -32,6 +32,10 @@ Grid.prototype.getLine = function (id) {
 	return this.getVector(id * this.unitInterval + this.shift);
 };
 
+Grid.prototype.getNormalAngle = function () {
+	return this.normal.arg();
+};
+
 /**
  * Get intersection of normal of grid and passed line
  * @param  {Object}
