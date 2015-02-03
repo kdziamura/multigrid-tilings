@@ -1,5 +1,6 @@
 importScripts('../libs/Complex.js');
 importScripts('../libs/collections.js');
+importScripts('../Grid.js');
 importScripts('../Multigrid.js');
 
 function getNewPopulation (multigrid, toSurvive, toBirth, population) {
