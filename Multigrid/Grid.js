@@ -14,8 +14,8 @@ function Grid (params) {
 	var shift = params.shift || 0;
 	this.vector = Complex.fromPolar(1, params.angle);
 
-	this.unitVector = new Complex(this.vector).mul(unitInterval);
-	this.normal = new Complex(0, 1).mul(this.vector);
+	this.unitVector = this.getVector(unitInterval);
+	this.normal = this.getVector(new Complex(0, 1));
 
 	this.angle = params.angle;
 	this.unitInterval = unitInterval;
